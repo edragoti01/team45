@@ -69,6 +69,7 @@ class Square:
         current_time = rospy.get_rostime().secs 
         status = ""
         wait = 0
+        #limit the time within 90 seconds
         while not self.ctrl_c and abs(rospy.get_rostime().secs  - self.StartTime) <= (90):
             if self.startup:
                 self.vel = Twist()
