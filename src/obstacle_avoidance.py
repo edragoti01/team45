@@ -66,27 +66,26 @@ class Square:
         print(f"current odometry: x = {self.x:.3f}, y = {self.y:.3f}, theta_z = {self.theta_z:.3f}")
 
     def main_loop(self):
-        current_time = rospy.get_rostime().secs 
         status = ""
-        wait = 0
+       
         #limit the time within 90 seconds
         while not self.ctrl_c and abs(rospy.get_rostime().secs  - self.StartTime) <= (90):
             if self.startup:
                 self.vel = Twist()
                 status = "init"
             elif self.turn:
-                if abs(self.theta_z0 - self.theta_z) >= pi/2 and wait > 5:
+                if abs(self.theta_z0 - self.theta_z) >= pi/2 :
                     # If the robot has turned 90 degrees (in radians) then stop turning
                     self.turn = False
                     self.vel = Twist()
                     self.theta_z0 = self.theta_z
                     status = "turn-fwd transition"
-                    wait = 0
+                    
                 else:
                     self.vel = Twist()
                     self.vel.angular.z = 0.2
                     status = "turning"
-                    wait += 1
+                    
             else:
                 if sqrt(pow(self.x0 - self.x, 2) + pow(self.y0 - self.y, 2)) >= 0.5:
                     # if distance travelled is greater than 0.5m then stop, and start turning:
