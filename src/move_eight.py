@@ -6,7 +6,6 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
 from math import sqrt, pow, pi
-#imports
 class Circle:
 
 
@@ -47,7 +46,7 @@ class Circle:
 
         self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
         self.sub = rospy.Subscriber('odom', Odometry, self.callback_function)
-                                                                                                                                                
+
         rospy.init_node(node_name, anonymous=True)
         self.rate = rospy.Rate(1) # hz
 
@@ -57,6 +56,7 @@ class Circle:
         self.x0 = 0.0
         self.y0 = 0.0
         self.theta_z0 = 0.0
+        #self.circle1= False
         self.vel = Twist()
 
         self.ctrl_c = False
@@ -81,9 +81,13 @@ class Circle:
                 self.vel = Twist()
                 #status = "init"
             else: 
-                
+                #if (self.theta_z0 == self.theta_z)  and wait < 1: 
                 if abs(rospy.get_rostime().secs  - self.StartTime) <= (35):
-                                         
+                    print(rospy.get_rostime().secs)
+                    print(self.StartTime)
+                    print(rospy.get_rostime().secs - self.StartTime)
+                    # (self.x != 0.040)& (self.y != -0.004)
+                    #& abs(self.theta_z0 - self.theta_z) <= 0.1 & (self.x < -o.o7)                      
                     # specify the radius of the circle:
                     path_rad = 0.5 # m
                     # linear velocity must be below 0.26m/s:
@@ -94,7 +98,11 @@ class Circle:
                     self.vel.angular.z = lin_vel / path_rad # rad/s
                     #self.circle1= True
                     # current_time += (2*pi*path_rad)/lin_vel
-                else :            
+                else :
+                #elif self.circle1 == True  :
+                    print(rospy.get_rostime().secs)
+                    print(self.StartTime)
+                    print(rospy.get_rostime().secs - self.StartTime)
                     # specify the radius of the circle:
                     path_rad = 0.5# m
                     # linear velocity must be below 0.26m/s:

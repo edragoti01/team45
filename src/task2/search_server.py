@@ -94,11 +94,14 @@ class SearchActionServer(object):
             self.result.closest_object_angle = self.tb3_lidar.closest_object_position
 
             self.actionserver.set_succeeded(self.result)
-            if True :
-                self.vel_controller.set_move_cmd(goal.fwd_velocity, 3.0)
+
+
+            self.vel_controller.set_move_cmd(0, 3.0)
+
+            while self.tb3_lidar.min_distance > 0.3:
                 self.vel_controller.publish()
-            else :
-                self.vel_controller.stop()
+
+            self.vel_controller.stop()
             
 if __name__ == '__main__':
     rospy.init_node("search_action_server")
