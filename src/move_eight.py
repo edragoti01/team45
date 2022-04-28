@@ -63,64 +63,66 @@ class Circle:
         rospy.on_shutdown(self.shutdownhook)
 
         rospy.loginfo("the 'move_circle' node is active...")
+        print(f"x = {self.vel.linear.x:.2f}, y = {self.vel.linear.y:.2f}, yaw = {self.vel.angular.z:.2f} [degrees]")
 
     def shutdownhook(self):
        self.pub.publish(Twist())
+       rospy.loginfo("the 'move_circle' node is shutting down...")
        self.ctrl_c = True
 
-    def print_stuff(self, a_message):
-        print(a_message)
-        print(f"current velocity: lin.x = {self.vel.linear.x:.1f}, ang.z = {self.vel.angular.z:.1f}")
-        print(f"current odometry: x = {self.x:.3f}, y = {self.y:.3f}, theta_z = {self.theta_z:.3f}")
+    def print_info(lin_vel, self):
+        if lin_vel != 0:
+            print(f"x = {self.x:.2f}, y = {self.y:.2f}, yaw = {self.theta_z:.2f} [degrees]")
 
     def main_loop(self):
-        current_time = rospy.get_rostime().secs 
-        #self.StartTime = rospy.get_rostime().secs 
+        reference_time = 0
         while not self.ctrl_c:
             if self.startup:
                 self.vel = Twist()
                 #status = "init"
             else: 
-                #if (self.theta_z0 == self.theta_z)  and wait < 1: 
-                if abs(rospy.get_rostime().secs  - self.StartTime) <= (35):
-                    print(rospy.get_rostime().secs)
-                    print(self.StartTime)
-                    print(rospy.get_rostime().secs - self.StartTime)
-                    # (self.x != 0.040)& (self.y != -0.004)
-                    #& abs(self.theta_z0 - self.theta_z) <= 0.1 & (self.x < -o.o7)                      
+
+                current_time = rospy.get_rostime().secs
+  
+                if reference_time == 0:
+                    reference_time = current_time
+
+                run_time = current_time - reference_time
+
+                if run_time <= (30):
+
                     # specify the radius of the circle:
                     path_rad = 0.5 # m
+
                     # linear velocity must be below 0.26m/s:
-                    lin_vel = 0.1 # m/s
+                    lin_vel = pi/30 # m/s
                     self.vel = Twist()
                     self.vel.linear.x = lin_vel
+
                     #clockwise directiom
                     self.vel.angular.z = lin_vel / path_rad # rad/s
-                    #self.circle1= True
-                    # current_time += (2*pi*path_rad)/lin_vel
-                else :
-                #elif self.circle1 == True  :
-                    print(rospy.get_rostime().secs)
-                    print(self.StartTime)
-                    print(rospy.get_rostime().secs - self.StartTime)
+                elif run_time <= (60):
+
                     # specify the radius of the circle:
                     path_rad = 0.5# m
+
                     # linear velocity must be below 0.26m/s:
-                    lin_vel = 0.1 # m/s
+                    lin_vel = pi/30 # m/s
                     self.vel = Twist()
-                    self.vel.linear.x = lin_vel     
+                    self.vel.linear.x = lin_vel 
+
                     #antclockwise directiom
                     self.vel.angular.z = -(lin_vel / path_rad) # rad/s
-                    #w#self.StartTime += (2*pi*path_rad)/lin_vel
-        
+                else:
+                    # Once figure of eight is complete, stop the robot
+                    self.vel.linear.x = 0.0 # m/s
+                    self.vel.angular .z = 0.0 # rad/s
+                    print("The figure of eight is complete")
 
-
+                                
             self.pub.publish(self.vel)
-            #self.print_stuff(self.vel.angular.z)
-            #print('test print of angular: ', self.vel.angular)
-            #print(self.theta_z0)
+            self.print_info()
             self.rate.sleep()
-           
 
 if __name__ == '__main__':
     eight_instance  = Circle()
