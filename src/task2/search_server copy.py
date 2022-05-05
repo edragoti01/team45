@@ -28,24 +28,21 @@ class SearchActionServer(object):
         self.vel_controller = Tb3Move()
         self.tb3_odom = Tb3Odometry()
         self.tb3_lidar = Tb3LaserScan()
-
-        self.turned = False
     
     def scan_callback(self, scan_data):
-        self.left_arc = scan_data.ranges[0:5]
-        self.right_arc = scan_data.ranges[-5:]
-        self.front_arc = np.array(self.left_arc[::-1] + self.right_arc[::-1])
-        self.min_distance = self.front_arc.min()
+        left_arc = scan_data.ranges[0:21]
+        right_arc = scan_data.ranges[-20:]
+        front_arc = np.array(left_arc[::-1] + right_arc[::-1])
+        self.min_distance = front_arc.min()
         # Create another numpy array which represents the angles 
         # (in degrees) associated with each of the data-points in 
         # the "front_arc" array above:
-        self.arc_angles = np.arange(-5, 5)
+        self.arc_angles = np.arange(-20, 21)
         
         # determine the angle at which the minimum distance value is located
         # in front of the robot:
-        self.object_angle = self.arc_angles[np.argmin(self.front_arc)]
+        self.object_angle = self.arc_angles[np.argmin(front_arc)]
     def action_server_launcher(self, goal: SearchGoal):
-        
         r = rospy.Rate(10)
 
         success = True
@@ -86,18 +83,7 @@ class SearchActionServer(object):
                 success = False
                 # exit the loop:
                 break
-            if self.tb3_lidar.min_distance <= 0.5:
-                print('turning')
-                self.turn()
-                self.turned = True
-                self.vel_controller.publish() 
-
-            if self.turned:
-                print('here')
-                self.vel_controller.set_move_cmd(0.1, 0)
-                
-                self.turned = False
-                #self.vel_controller.publish() 
+            
             self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))
             # populate the feedback message and publish it:
             self.feedback.current_distance_travelled = self.distance
@@ -110,36 +96,35 @@ class SearchActionServer(object):
             self.result.closest_object_angle = self.tb3_lidar.closest_object_position
 
             self.actionserver.set_succeeded(self.result)
-            
 
-            self.vel_controller.publish() 
-            
+
+            #self.vel_controller.set_move_cmd(0, 3.0)
+            self.turn()
             self.vel_controller.stop()
-           
-
-                
 
             
     #Adjust direction to avoid being hit 
-    def turn(self): 
-        
+    def turn(self):  
+        the_value            = 1.0
         left_degree_distance  = self.tb3_lidar.left_arc
         right_degree_distance = self.tb3_lidar.right_arc
-        print(left_degree_distance)
-        print ( "is long")
+
         
         #If condition for Determine which direction to turn     
-        if left_degree_distance <= right_degree_distance :
-            print('j')
-            self.vel_controller.set_move_cmd(0, 3.0)
-            self.vel_controller.publish() 
-        else:
-            self.vel_controller.set_move_cmd(0, 0)
-            self.vel_controller.publish() 
-            print('stop')
+        if left_degree_distance.max() >= the_value and right_degree_distance.max() >= the_value:
+            if self.closest_object_angle < 0:
+                self.vel_controller.set_move_cmd(0, -3.0)
+
+            else:
+                self.vel_controller.set_move_cmd(0, 3.0)
+
+        elif right_degree_distance.max() > left_degree_distance.max():
+                self.vel_controller.set_move_cmd(0, -3.0)
+        else :
+            self.vel_controller.stop()
 
 
-
+        self.publish()
             
 if __name__ == '__main__':
     rospy.init_node("search_action_server")

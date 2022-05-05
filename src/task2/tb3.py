@@ -13,6 +13,7 @@ class Tb3Move(object):
         self.publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         self.publisher_rate = rospy.Rate(10) # Hz
         self.vel_cmd = Twist()
+        print("1")
 
     def set_move_cmd(self, linear = 0.0, angular = 0.0):
         self.vel_cmd.linear.x = linear
@@ -48,13 +49,13 @@ class Tb3Odometry(object):
 
 class Tb3LaserScan(object):
     def laserscan_cb(self, scan_data):
-        left_arc = scan_data.ranges[0:21]
-        right_arc = scan_data.ranges[-20:]
-        front_arc = np.array(left_arc[::-1] + right_arc[::-1])
+        self.left_arc = scan_data.ranges[0:21]
+        self.right_arc = scan_data.ranges[-20:]
+        self.front_arc = np.array(self.left_arc[::-1] + self.right_arc[::-1])
         
-        self.min_distance = front_arc.min()
+        self.min_distance = self.front_arc.min()
         arc_angles = np.arange(-20, 21)
-        self.closest_object_position = arc_angles[np.argmin(front_arc)]
+        self.closest_object_position = arc_angles[np.argmin(self.front_arc)]
 
     def __init__(self):
         self.min_distance = 0.0

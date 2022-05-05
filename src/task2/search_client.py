@@ -6,8 +6,35 @@ import actionlib
 
 from com2009_msgs.msg import SearchAction, SearchGoal, SearchFeedback
 
+from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
+from tf.transformations import euler_from_quaternion
+from math import sqrt, pow, pi
+
 class action_client(object):
    
+    def callback_function(self, odom_data):
+        # obtain the orientation and position co-ords:
+        or_x = odom_data.pose.pose.orientation.x
+        or_y = odom_data.pose.pose.orientation.y
+        or_z = odom_data.pose.pose.orientation.z
+        or_w = odom_data.pose.pose.orientation.w
+        pos_x = odom_data.pose.pose.position.x
+        pos_y = odom_data.pose.pose.position.y
+
+        # convert orientation co-ords to roll, pitch & yaw (theta_x, theta_y, theta_z):
+        (roll, pitch, yaw) = euler_from_quaternion([or_x, or_y, or_z, or_w], 'sxyz')
+        
+        self.x = pos_x
+        self.y = pos_y
+        self.theta_z = yaw 
+
+        if self.startup:
+            self.startup = False
+            self.x0 = self.x
+            self.y0 = self.y
+            self.theta_z0 = self.theta_z
+
     def feedback_callback(self, feedback_data: SearchFeedback):
         self.distance = feedback_data.current_distance_travelled
         if self.i < 100:
@@ -17,6 +44,7 @@ class action_client(object):
             print(f"FEEDBACK: Currently travelled {self.distance:.3f} m")
 
     def __init__(self):
+        node_name = "searc client"
         self.action_complete = False
         rospy.init_node("search_action_client")
         self.rate = rospy.Rate(1)
@@ -24,6 +52,26 @@ class action_client(object):
         self.client = actionlib.SimpleActionClient("/search_action_server", 
                     SearchAction)
         self.client.wait_for_server()
+
+        self.startup = True
+        self.turn = False
+
+        self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        self.sub = rospy.Subscriber('odom', Odometry, self.callback_function)
+
+        #rospy.init_node(node_name, anonymous=True)
+        self.rate = rospy.Rate(10) # hz
+
+        self.x = 0.0
+        self.y = 0.0
+        self.theta_z = 0.0
+        self.x0 = 0.0
+        self.y0 = 0.0
+        self.theta_z0 = 0.0
+        
+        self.vel = Twist()
+
+        self.ctrl_c = False
 
         rospy.on_shutdown(self.shutdown_ops) 
         self.distance = 0.0
@@ -35,6 +83,16 @@ class action_client(object):
             rospy.logwarn("Received a shutdown request. Cancelling Goal...")
             self.client.cancel_goal()
             rospy.logwarn("Goal Cancelled")
+
+
+    def orientation_convert(self, odom_data):
+        orientation = odom_data.pose.pose.orientation
+        position    = odom_data.pose.pose.position
+        (_, _, yaw) = euler_from_quaternion([orientation.x,
+            orientation.y, orientation.z, orientation.w],'sxyz')
+
+
+    
 
 
     def print_stuff(self, a_message):
@@ -53,7 +111,7 @@ class action_client(object):
            
         self.send_goal(velocity = 0.1, approach = 0.4)
         prempt = False
-        while self.client.get_state() < 3:
+        while self.client.get_state() < 3:   
             print(f"FEEDBACK: Currently travelled {self.distance:.3f} m, "
                     f"STATE: Current state code is {self.client.get_state()}")
             if self.distance >= 2:
@@ -62,8 +120,6 @@ class action_client(object):
                 rospy.logwarn("Goal Cancelled")
                 prempt = True
                 break
-            
-        
         
         self.rate.sleep()
 
