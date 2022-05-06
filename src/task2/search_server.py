@@ -84,7 +84,7 @@ class SearchActionServer(object):
         self.vel_controller.set_move_cmd(goal.fwd_velocity, 0.0)
         
         while self.tb3_lidar.min_distance > goal.approach_distance:
-            print(f'Minimum distance = {self.tb3_lidar.min_distance}')
+            #print(f'Minimum distance = {self.tb3_lidar.min_distance}')
             self.vel_controller.publish()
             # check if there has been a request to cancel the action mid-way through:
             if self.actionserver.is_preempt_requested():
@@ -95,7 +95,7 @@ class SearchActionServer(object):
                 success = False
                 # exit the loop:
                 break
-            if self.tb3_lidar.min_distance <= 0.6:
+            if self.tb3_lidar.min_distance <= 0.8:
                 print('turning')
                 self.turn()
                 self.vel_controller.publish() 
@@ -124,6 +124,7 @@ class SearchActionServer(object):
             self.actionserver.publish_feedback(self.feedback)
 
         while self.tb3_lidar.min_distance < goal.approach_distance:
+            print(f'Minimum distance = {self.tb3_lidar.min_distance}')
             if self.tb3_lidar.min_distance < 0.2 :
                 self.vel_controller.stop()
             else :
@@ -158,9 +159,13 @@ class SearchActionServer(object):
         print ( "is long")
         
         #If condition for Determine which direction to turn     
-        if left_degree_distance <= right_degree_distance :
+        if left_degree_distance < right_degree_distance :
             print('j')
             self.vel_controller.set_move_cmd(0, -3.0)
+            self.vel_controller.publish() 
+        elif right_degree_distance == left_degree_distance :
+            print("i")
+            self.vel_controller.set_move_cmd(0, 3.0)
             self.vel_controller.publish() 
         else:
             self.vel_controller.set_move_cmd(0, 0)

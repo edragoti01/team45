@@ -12,28 +12,7 @@ from tf.transformations import euler_from_quaternion
 from math import sqrt, pow, pi
 
 class action_client(object):
-   
-    def callback_function(self, odom_data):
-        # obtain the orientation and position co-ords:
-        or_x = odom_data.pose.pose.orientation.x
-        or_y = odom_data.pose.pose.orientation.y
-        or_z = odom_data.pose.pose.orientation.z
-        or_w = odom_data.pose.pose.orientation.w
-        pos_x = odom_data.pose.pose.position.x
-        pos_y = odom_data.pose.pose.position.y
-
-        # convert orientation co-ords to roll, pitch & yaw (theta_x, theta_y, theta_z):
-        (roll, pitch, yaw) = euler_from_quaternion([or_x, or_y, or_z, or_w], 'sxyz')
-        
-        self.x = pos_x
-        self.y = pos_y
-        self.theta_z = yaw 
-
-        if self.startup:
-            self.startup = False
-            self.x0 = self.x
-            self.y0 = self.y
-            self.theta_z0 = self.theta_z
+       
 
     def feedback_callback(self, feedback_data: SearchFeedback):
         self.distance = feedback_data.current_distance_travelled
@@ -56,20 +35,6 @@ class action_client(object):
         self.startup = True
         self.turn = False
 
-        self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
-        self.sub = rospy.Subscriber('odom', Odometry, self.callback_function)
-
-        #rospy.init_node(node_name, anonymous=True)
-        self.rate = rospy.Rate(10) # hz
-
-        self.x = 0.0
-        self.y = 0.0
-        self.theta_z = 0.0
-        self.x0 = 0.0
-        self.y0 = 0.0
-        self.theta_z0 = 0.0
-        
-        self.vel = Twist()
 
         self.ctrl_c = False
 
@@ -83,13 +48,6 @@ class action_client(object):
             rospy.logwarn("Received a shutdown request. Cancelling Goal...")
             self.client.cancel_goal()
             rospy.logwarn("Goal Cancelled")
-
-
-    def orientation_convert(self, odom_data):
-        orientation = odom_data.pose.pose.orientation
-        position    = odom_data.pose.pose.position
-        (_, _, yaw) = euler_from_quaternion([orientation.x,
-            orientation.y, orientation.z, orientation.w],'sxyz')
 
 
     
