@@ -48,28 +48,7 @@ class SearchActionServer(object):
         # in front of the robot:
         self.object_angle = self.arc_angles[np.argmin(self.front_arc)]
 
-    def callback_function(self, odom_data):
-        # obtain the orientation and position co-ords:
-        or_x = odom_data.pose.pose.orientation.x
-        or_y = odom_data.pose.pose.orientation.y
-        or_z = odom_data.pose.pose.orientation.z
-        or_w = odom_data.pose.pose.orientation.w
-        pos_x = odom_data.pose.pose.position.x
-        pos_y = odom_data.pose.pose.position.y
-
-        # convert orientation co-ords to roll, pitch & yaw (theta_x, theta_y, theta_z):
-        (roll, pitch, yaw) = euler_from_quaternion([or_x, or_y, or_z, or_w], 'sxyz')
-        
-        self.x = pos_x
-        self.y = pos_y
-        self.theta_z = yaw 
-
-        if self.startup: 
-            self.startup = False
-            self.x0 = self.x
-            self.y0 = self.y
-            self.theta_z0 = self.theta_z
-
+    
     def action_server_launcher(self, goal: SearchGoal):
         
         r = rospy.Rate(10)
@@ -94,8 +73,11 @@ class SearchActionServer(object):
                 f"infront of any obstacles")
 
         # Get the current robot odometry:
-        self.posx0 = self.tb3_odom.posx
-        self.posy0 = self.tb3_odom.posy
+        #self.posx0 = self.tb3_odom.posx
+        #self.posy0 = self.tb3_odom.posy
+        self.posx0 = 0.0
+        self.posy0 = 0.0
+        #self.vel_controller.publish() 
 
         print("The robot will start to move now...")
         # set the robot velocity:
@@ -112,23 +94,23 @@ class SearchActionServer(object):
                 success = False
                 # exit the loop:
                 break
-            if self.tb3_lidar.min_distance <= 0.5:
+            if self.tb3_lidar.min_distance <= 0.6:
                 print('turning')
                 self.turn()
-                self.turned = True
                 self.vel_controller.publish() 
+                self.turned = True
+                #self.vel_controller.publish() 
 
             if self.turned:
                 print('here')
                 self.turned = False
-                self.limitationx = self.tb3_odom.posx
-                self.limitationy = self.tb3_odom.posy
-                if sqrt(pow(self.limitationx - self.tb3_odom.posx, 2) + pow(self.limitationy - self.tb3_odom.posy, 2)) >= 0.5:
+                if sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2)) >= 0.5:
                     # if distance travelled is greater than 0.5m then stop,otherwise move forward
-                    # the problems is now this cannot work
-                    self.x0 = self.x
-                    self.y0 = self.y
-                    self.vel_controller.stop() 
+                    # the problems is now this cannot work        
+                    self.posx0 = self.tb3_odom.posx
+                    self.posy0 = self.tb3_odom.posy
+                    self.vel_controller.stop()
+                    #self.vel_controller.publish()  
                 else:
                    self.vel_controller.set_move_cmd(0.2, 0) 
                 #self.vel_controller.publish() 
