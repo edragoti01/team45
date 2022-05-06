@@ -84,6 +84,7 @@ class SearchActionServer(object):
         self.vel_controller.set_move_cmd(goal.fwd_velocity, 0.0)
         
         while self.tb3_lidar.min_distance > goal.approach_distance:
+            print(f'Minimum distance = {self.tb3_lidar.min_distance}')
             self.vel_controller.publish()
             # check if there has been a request to cancel the action mid-way through:
             if self.actionserver.is_preempt_requested():
@@ -104,6 +105,7 @@ class SearchActionServer(object):
             if self.turned:
                 print('here')
                 self.turned = False
+                """
                 if sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2)) >= 0.5:
                     # if distance travelled is greater than 0.5m then stop,otherwise move forward
                     # the problems is now this cannot work        
@@ -113,11 +115,22 @@ class SearchActionServer(object):
                     #self.vel_controller.publish()  
                 else:
                    self.vel_controller.set_move_cmd(0.2, 0) 
+                """
+                self.vel_controller.set_move_cmd(0.2, 0) 
                 #self.vel_controller.publish() 
             self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))
             # populate the feedback message and publish it:
             self.feedback.current_distance_travelled = self.distance
             self.actionserver.publish_feedback(self.feedback)
+
+        while self.tb3_lidar.min_distance < goal.approach_distance:
+            if self.tb3_lidar.min_distance < 0.2 :
+                self.vel_controller.stop()
+            else :
+                self.turn()
+                self.vel_controller.publish() 
+                self.turned = True
+            #pass
 
         if success:
             rospy.loginfo("approach completed sucessfully.")
@@ -147,7 +160,7 @@ class SearchActionServer(object):
         #If condition for Determine which direction to turn     
         if left_degree_distance <= right_degree_distance :
             print('j')
-            self.vel_controller.set_move_cmd(0, 3.0)
+            self.vel_controller.set_move_cmd(0, -3.0)
             self.vel_controller.publish() 
         else:
             self.vel_controller.set_move_cmd(0, 0)

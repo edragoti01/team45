@@ -108,33 +108,35 @@ class action_client(object):
         self.client.send_goal(self.goal, feedback_cb=self.feedback_callback)
 
     def main(self):
-           
         self.send_goal(velocity = 0.1, approach = 0.4)
-        prempt = False
-        while self.client.get_state() < 3:   
-            print(f"FEEDBACK: Currently travelled {self.distance:.3f} m, "
-                    f"STATE: Current state code is {self.client.get_state()}")
-            if self.distance >= 4:
-                rospy.logwarn("Cancelling goal now...")
-                self.client.cancel_goal()
-                rospy.logwarn("Goal Cancelled")
-                prempt = True
-                break
-        
-        self.rate.sleep()
+        while not self.goal==self.send_goal :
+            self.send_goal(velocity = 0.1, approach = 0.4)
+            prempt = False
+            while self.client.get_state() < 3:   
+                print(f"FEEDBACK: Currently travelled {self.distance:.3f} m, "
+                        f"STATE: Current state code is {self.client.get_state()}")
+                """
+                if self.distance >= 4:
+                    rospy.logwarn("Cancelling goal now...")
+                    self.client.cancel_goal()
+                    rospy.logwarn("Goal Cancelled")
+                    prempt = True
+                    break
+                """
+            self.rate.sleep()
 
-        #self.rate.sleep()
-        
-        self.action_complete = True
+            #self.rate.sleep()
+            
+            self.action_complete = True
 
 
-        print(f"RESULT: Action State = {self.client.get_state()}")
-        if prempt:
-            print("RESULT: Action preempted after travelling 2 meters")
-        else:
-            result = self.client.get_result()
-            print(f"RESULT: closest object {result.closest_object_distance:.3f} m away "
-                    f"at a location of {result.closest_object_angle:.3f} degrees")
+            print(f"RESULT: Action State = {self.client.get_state()}")
+            if prempt:
+                print("RESULT: Action preempted after travelling 2 meters")
+            else:
+                result = self.client.get_result()
+                print(f"RESULT: closest object {result.closest_object_distance:.3f} m away "
+                        f"at a location of {result.closest_object_angle:.3f} degrees")
 
 if __name__ == '__main__':
     client_instance = action_client()
