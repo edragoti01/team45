@@ -23,6 +23,28 @@ class SearchActionServer(object):
     feedback = SearchFeedback() 
     result = SearchResult()
 
+    def callback_function(self, odom_data):
+        # obtain the orientation and position co-ords:
+        or_x = odom_data.pose.pose.orientation.x
+        or_y = odom_data.pose.pose.orientation.y
+        or_z = odom_data.pose.pose.orientation.z
+        or_w = odom_data.pose.pose.orientation.w
+        pos_x = odom_data.pose.pose.position.x
+        pos_y = odom_data.pose.pose.position.y
+
+        # convert orientation co-ords to roll, pitch & yaw (theta_x, theta_y, theta_z):
+        (roll, pitch, yaw) = euler_from_quaternion([or_x, or_y, or_z, or_w], 'sxyz')
+        
+        self.x = pos_x
+        self.y = pos_y
+        self.theta_z = yaw 
+
+        if self.startup: 
+            self.startup = False
+            self.x0 = self.x
+            self.y0 = self.y
+            self.theta_z0 = self.theta_z
+
     def __init__(self):
         self.actionserver = actionlib.SimpleActionServer("/search_action_server", 
             SearchAction, self.action_server_launcher, auto_start=False)
@@ -33,6 +55,13 @@ class SearchActionServer(object):
         self.tb3_lidar = Tb3LaserScan()
 
         self.turned = False
+
+        self.x = 0.0
+        self.y = 0.0
+        self.theta_z = 0.0
+        self.x0 = 0.0
+        self.y0 = 0.0
+        self.theta_z0 = 0.0
     
     def scan_callback(self, scan_data):
         self.left_arc = scan_data.ranges[0:5]
@@ -145,13 +174,9 @@ class SearchActionServer(object):
             
     #Adjust direction to avoid being hit 
     def turnleft(self): 
-        
-        left_degree_distance  = self.tb3_lidar.left_arc
-        right_degree_distance = self.tb3_lidar.right_arc
-        print ( "left")
-        
+        print ( "left")        
         #If condition for Determine which direction to turn     
-        if left_degree_distance < right_degree_distance :
+        if abs(self.theta_z0 - self.theta_z) <= pi/2 :
             self.vel_controller.set_move_cmd(0, -3.0)
             self.vel_controller.publish()  
         else:
@@ -159,14 +184,10 @@ class SearchActionServer(object):
             self.vel_controller.publish() 
             
 
-    def turnright(self): 
-      
-        left_degree_distance  = self.tb3_lidar.left_arc
-        right_degree_distance = self.tb3_lidar.right_arc
-        print ( "right")
-        
+    def turnright(self):       
+        print ( "right")    
         #If condition for Determine which direction to turn     
-        if right_degree_distance > left_degree_distance :
+        if abs(self.theta_z0 - self.theta_z) <= pi/2  :
             self.vel_controller.set_move_cmd(0, 3.0)
             self.vel_controller.publish()  
         else:
