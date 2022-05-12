@@ -103,7 +103,7 @@ class Circle:
                     self.vel.linear.x = 0.115 # m/s
                     self.vel.angular.z = 0.0 # rad/s
 
-                elif run_time <= (60):
+                elif run_time <= (61):
 
                     # specify the radius of the circle:
                     path_rad = 0.5 # m
@@ -122,7 +122,6 @@ class Circle:
                     self.vel.angular .z = 0.0 # rad/s
                                 
             self.pub.publish(self.vel)
-            self.print_info.rate = rospy.Rate(1) #hz
             self.print_info()
             self.rate.sleep()
 
