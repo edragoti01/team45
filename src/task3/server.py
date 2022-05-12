@@ -64,14 +64,14 @@ class SearchActionServer(object):
         self.theta_z0 = 0.0
     
     def scan_callback(self, scan_data):
-        self.left_arc = scan_data.ranges[0:5]
-        self.right_arc = scan_data.ranges[-5:]
+        self.left_arc = scan_data.ranges[0:20]
+        self.right_arc = scan_data.ranges[-20:]
         self.front_arc = np.array(self.left_arc[::-1] + self.right_arc[::-1])
         self.min_distance = self.front_arc.min()
         # Create another numpy array which represents the angles 
         # (in degrees) associated with each of the data-points in 
         # the "front_arc" array above:
-        self.arc_angles = np.arange(-5, 5)
+        self.arc_angles = np.arange(-20, 20)
         
         # determine the angle at which the minimum distance value is located
         # in front of the robot:
@@ -111,9 +111,15 @@ class SearchActionServer(object):
         print("The robot will start to move now...")
         # set the robot velocity:
         self.vel_controller.set_move_cmd(goal.fwd_velocity, 0.0)
-        
+        reference_time = 0
+        current_time = rospy.get_rostime().secs
+        print(current_time)
+        if reference_time == 0:
+            reference_time = current_time
         while self.tb3_lidar.min_distance > goal.approach_distance:
-            #print(f'Minimum distance = {self.tb3_lidar.min_distance}')
+            run_time = current_time - reference_time
+            #print(run_time)
+            print(f'Minimum distance = {self.tb3_lidar.min_distance}')
             self.vel_controller.publish()
             # check if there has been a request to cancel the action mid-way through:
             if self.actionserver.is_preempt_requested():
@@ -124,27 +130,28 @@ class SearchActionServer(object):
                 success = False
                 # exit the loop:
                 break
-            if self.tb3_lidar.min_distance <= 0.6:
-                print('turning')
-                self.turnleft()
-                self.vel_controller.publish() 
-                self.turned = True
+            while self.tb3_lidar.min_distance <= 0.5:
+                if min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc):
+                    print('turning')
+                    self.turnleft()
+                    self.vel_controller.publish() 
+                    self.turned = True
                 #self.vel_controller.publish() 
-
+                if min(self.tb3_lidar.left_arc) < min(self.tb3_lidar.right_arc):
+                    print('turning')
+                    self.turnright()
+                    self.vel_controller.publish() 
+                    self.turned = True
+                #self.vel_controller.publish() 
             if self.turned:
                 print('here')
                 self.turned = False
-                reference_time = 0
-                current_time = rospy.get_rostime().secs
-  
-                if reference_time == 0:
-                    reference_time = current_time
-
-                run_time = current_time - reference_time
-
+                
+                
+                
                 self.vel_controller.set_move_cmd(0.2, 0)
-                if run_time >= (1.5):                           
-                    self.turnright()
+                if run_time >= (1.8):                           
+                    self.turnleft()
                     self.vel_controller.publish()  
                 else:
                     self.vel_controller.set_move_cmd(0.2, 0)
@@ -177,7 +184,7 @@ class SearchActionServer(object):
         print ( "left")        
         #If condition for Determine which direction to turn     
         if abs(self.theta_z0 - self.theta_z) <= pi/2 :
-            self.vel_controller.set_move_cmd(0, -3.0)
+            self.vel_controller.set_move_cmd(0, -2.0)
             self.vel_controller.publish()  
         else:
             self.vel_controller.set_move_cmd(0, 0)
@@ -188,7 +195,7 @@ class SearchActionServer(object):
         print ( "right")    
         #If condition for Determine which direction to turn     
         if abs(self.theta_z0 - self.theta_z) <= pi/2  :
-            self.vel_controller.set_move_cmd(0, 3.0)
+            self.vel_controller.set_move_cmd(0, 2.0)
             self.vel_controller.publish()  
         else:
             self.vel_controller.set_move_cmd(0, 0)
