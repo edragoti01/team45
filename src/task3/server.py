@@ -132,14 +132,16 @@ class SearchActionServer(object):
                 break
             while self.tb3_lidar.min_distance <= 0.5:
                 if min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc):
+                    print(min(self.tb3_lidar.left_arc))
+                    print(min(self.tb3_lidar.right_arc))
                     print('turning')
-                    self.turnleft()
+                    self.vel_controller.set_move_cmd(0, 2.0)
                     self.vel_controller.publish() 
                     self.turned = True
                 #self.vel_controller.publish() 
                 if min(self.tb3_lidar.left_arc) < min(self.tb3_lidar.right_arc):
-                    print('turning')
-                    self.turnright()
+                    print('turning2')
+                    self.vel_controller.set_move_cmd(0, -2.0)
                     self.vel_controller.publish() 
                     self.turned = True
                 #self.vel_controller.publish() 
@@ -180,17 +182,8 @@ class SearchActionServer(object):
 
             
     #Adjust direction to avoid being hit 
-    def turnleft(self): 
-        print ( "left")        
-        #If condition for Determine which direction to turn     
-        if abs(self.theta_z0 - self.theta_z) <= pi/2 :
-            self.vel_controller.set_move_cmd(0, -2.0)
-            self.vel_controller.publish()  
-        else:
-            self.vel_controller.set_move_cmd(0, 0)
-            self.vel_controller.publish() 
             
-
+    """
     def turnright(self):       
         print ( "right")    
         #If condition for Determine which direction to turn     
@@ -200,7 +193,7 @@ class SearchActionServer(object):
         else:
             self.vel_controller.set_move_cmd(0, 0)
             self.vel_controller.publish() 
-           
+    """       
             
 if __name__ == '__main__':
     rospy.init_node("search_action_server")
