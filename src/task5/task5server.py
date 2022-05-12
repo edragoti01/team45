@@ -68,11 +68,13 @@ class SearchActionServer(object):
         self.right_arc = scan_data.ranges[-20:]
         self.front_arc = np.array(self.left_arc[::-1] + self.right_arc[::-1])
         self.min_distance = self.front_arc.min()
+        self.back_left_arc=scan_data.ranges[170:180]
+        self.back_right_arc=scan_data.ranges[-170:-180]
         # Create another numpy array which represents the angles 
         # (in degrees) associated with each of the data-points in 
         # the "front_arc" array above:
         self.arc_angles = np.arange(-20, 20)
-        
+        print(min(scan_data.ranges))
         # determine the angle at which the minimum distance value is located
         # in front of the robot:
         self.object_angle = self.arc_angles[np.argmin(self.front_arc)]
@@ -81,7 +83,7 @@ class SearchActionServer(object):
     def action_server_launcher(self, goal: SearchGoal):
         
         r = rospy.Rate(10)
-
+        
         success = True
         if goal.fwd_velocity <= 0 or goal.fwd_velocity > 0.26:
             print("Invalid velocity.  Select a value between 0 and 0.26 m/s.")
@@ -136,15 +138,17 @@ class SearchActionServer(object):
                     print(min(self.tb3_lidar.right_arc))
                     print('turning')
                     self.vel_controller.set_move_cmd(0, 2.0)
-                    self.vel_controller.publish() 
+                    #self.vel_controller.publish() 
                     self.turned = True
                 #self.vel_controller.publish() 
                 if min(self.tb3_lidar.left_arc) < min(self.tb3_lidar.right_arc):
                     print('turning2')
+                    print(min(self.tb3_lidar.left_arc))
+                    print(min(self.tb3_lidar.right_arc))
                     self.vel_controller.set_move_cmd(0, -2.0)
-                    self.vel_controller.publish() 
+                    #self.vel_controller.publish() 
                     self.turned = True
-                #self.vel_controller.publish() 
+                self.vel_controller.publish() 
             if self.turned:
                 print('here')
                 self.turned = False
