@@ -68,12 +68,12 @@ class SearchActionServer(object):
         self.right_arc = scan_data.ranges[-20:]
         self.front_arc = np.array(self.left_arc[::-1] + self.right_arc[::-1])
         self.min_distance = self.front_arc.min()
-        self.back_left_arc=scan_data.ranges[170:180]
-        self.back_right_arc=scan_data.ranges[-170:-180]
+        self.back_close_left_arc=scan_data.ranges[-75:-105]
+        self.back_close_right_arc=scan_data.ranges[75:105]
         # Create another numpy array which represents the angles 
         # (in degrees) associated with each of the data-points in 
         # the "front_arc" array above:
-        self.arc_angles = np.arange(-20, 20)
+        self.arc_angles = np.arange(-105, 105)
         print(min(scan_data.ranges))
         # determine the angle at which the minimum distance value is located
         # in front of the robot:
@@ -85,16 +85,6 @@ class SearchActionServer(object):
         r = rospy.Rate(10)
         
         success = True
-        if goal.fwd_velocity <= 0 or goal.fwd_velocity > 0.26:
-            print("Invalid velocity.  Select a value between 0 and 0.26 m/s.")
-            success = False
-        if goal.approach_distance <= 0.2:
-            print("Invalid approach distance: I'll crash!")
-            success = False
-        elif goal.approach_distance > 3.5:
-            print("Invalid approach distance: I can't measure that far.")
-            success = False
-
         if not success:
             self.actionserver.set_aborted()
             return
@@ -112,15 +102,14 @@ class SearchActionServer(object):
 
         print("The robot will start to move now...")
         # set the robot velocity:
-        self.vel_controller.set_move_cmd(goal.fwd_velocity, 0.0)
+        self.vel_controller.set_move_cmd(0.26, 0.0)
         reference_time = 0
         current_time = rospy.get_rostime().secs
-        print(current_time)
         if reference_time == 0:
             reference_time = current_time
-        while self.tb3_lidar.min_distance > goal.approach_distance:
+        while current_time <= 190:
             run_time = current_time - reference_time
-            #print(run_time)
+            print(current_time)
             print(f'Minimum distance = {self.tb3_lidar.min_distance}')
             self.vel_controller.publish()
             # check if there has been a request to cancel the action mid-way through:
@@ -133,7 +122,7 @@ class SearchActionServer(object):
                 # exit the loop:
                 break
             while self.tb3_lidar.min_distance <= 0.5:
-                if min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc):
+                if min(self.tb3_lidar.left_arc) > min(self.tb3_lidar.right_arc):
                     print(min(self.tb3_lidar.left_arc))
                     print(min(self.tb3_lidar.right_arc))
                     print('turning')
@@ -141,26 +130,40 @@ class SearchActionServer(object):
                     #self.vel_controller.publish() 
                     self.turned = True
                 #self.vel_controller.publish() 
-                if min(self.tb3_lidar.left_arc) < min(self.tb3_lidar.right_arc):
+                elif min(self.tb3_lidar.right_arc) > min(self.tb3_lidar.left_arc):
                     print('turning2')
                     print(min(self.tb3_lidar.left_arc))
                     print(min(self.tb3_lidar.right_arc))
                     self.vel_controller.set_move_cmd(0, -2.0)
                     #self.vel_controller.publish() 
                     self.turned = True
-                self.vel_controller.publish() 
+
+                #if (min(self.tb3_lidar.left_arc)-min(self.tb3_lidar.right_arc))<=0.010:
+                 #   print('angles too close, go forward')
+                  #  self.vel_controller.set_move_cmd(0.15, 0)
+                if min(self.tb3_lidar.front_arc<=0.42):
+                    self.vel_controller.set_move_cmd(-0.075,0)
+                if (min(self.tb3_lidar.left_arc)<= 0.43) and (min(self.tb3_lidar.right_arc)<= 0.43):
+                    self.vel_controller.set_move_cmd(-0.065,0)
+                self.vel_controller.publish()   
+                if (min(self.tb3_lidar.left_arc))- (min(self.tb3_lidar.right_arc)) >=0.01:
+                    self.vel_controller.set_move_cmd(0, 1.0)
+                    self.turned = True
+                if (min(self.tb3_lidar.left_arc))- (min(self.tb3_lidar.right_arc)) <=-0.01:
+                    self.vel_controller.set_move_cmd(0, -1.0)
+                    self.turned = True
+                if (min(self.back_close_left_arc))<=0.33:
+                    self.vel_controller.set_move_cmd(1.0,0)
+                if (min(self.back_close_right_arc))<=0.33:
+                    self.vel_controller.set_move_cmd(-1.0,0)
+            self.vel_controller.publish() 
             if self.turned:
                 print('here')
                 self.turned = False
-                
-                
-                
                 self.vel_controller.set_move_cmd(0.2, 0)
-                if run_time >= (1.8):                           
-                    self.turnleft()
-                    self.vel_controller.publish()  
-                else:
-                    self.vel_controller.set_move_cmd(0.2, 0)
+                print('i again move forward lol')
+                self.vel_controller.publish()  
+
             self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))
             # populate the feedback message and publish it:
             self.feedback.current_distance_travelled = self.distance
