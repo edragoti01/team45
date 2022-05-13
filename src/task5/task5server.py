@@ -55,7 +55,8 @@ class SearchActionServer(object):
         self.tb3_lidar = Tb3LaserScan()
 
         self.turned = False
-
+        self.outed = False
+        self.stuck = 0
         self.x = 0.0
         self.y = 0.0
         self.theta_z = 0.0
@@ -68,8 +69,7 @@ class SearchActionServer(object):
         self.right_arc = scan_data.ranges[-20:]
         self.front_arc = np.array(self.left_arc[::-1] + self.right_arc[::-1])
         self.min_distance = self.front_arc.min()
-        self.back_left_arc=scan_data.ranges[170:180]
-        self.back_right_arc=scan_data.ranges[-170:-180]
+        
         # Create another numpy array which represents the angles 
         # (in degrees) associated with each of the data-points in 
         # the "front_arc" array above:
@@ -134,40 +134,56 @@ class SearchActionServer(object):
                 break
             while self.tb3_lidar.min_distance <= 0.5:
                 if min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc):
-                    print(min(self.tb3_lidar.left_arc))
-                    print(min(self.tb3_lidar.right_arc))
                     print('turning')
-                    self.vel_controller.set_move_cmd(0, 2.0)
-                    #self.vel_controller.publish() 
-                    self.turned = True
-                #self.vel_controller.publish() 
-                if min(self.tb3_lidar.left_arc) < min(self.tb3_lidar.right_arc):
-                    print('turning2')
-                    print(min(self.tb3_lidar.left_arc))
-                    print(min(self.tb3_lidar.right_arc))
-                    self.vel_controller.set_move_cmd(0, -2.0)
+                    self.vel_controller.set_move_cmd(0, 0.2)
                     #self.vel_controller.publish() 
                     self.turned = True
                 self.vel_controller.publish() 
-            if self.turned:
-                print('here')
-                self.turned = False
-                
-                
-                
-                self.vel_controller.set_move_cmd(0.2, 0)
-                if run_time >= (1.8):                           
-                    self.turnleft()
-                    self.vel_controller.publish()  
-                else:
-                    self.vel_controller.set_move_cmd(0.2, 0)
+                if min(self.tb3_lidar.left_arc) < min(self.tb3_lidar.right_arc):
+                    print('turning2')
+                    self.vel_controller.set_move_cmd(0, -0.2)
+                    self.vel_controller.publish() 
+                    self.turned = True
+                    self.vel_controller.publish()
+                    print(self.stuck)
+                self.vel_controller.publish()
+                if self.stuck >= 10: 
+                    #self.stuck <= 8 and self.stuck >= 5  
+                    # do not delete this, this is for robot stuck in the corner backfoward 
+                    self.vel_controller.set_move_cmd(-0.2, 0)
+                    self.out()
+                    self.outed = True
+                    self.stuck = 0
+                    if self.out:
+                        print('out already')
+                        self.turned = False
+                        self.vel_controller.set_move_cmd(0.1, 0)  
+                if self.turned:
+                    self.turned = False
+                    self.stuck += 1
+                    print('here')
+                    print(self.stuck)
+                    self.vel_controller.set_move_cmd(-0.2, 0)
+                    if sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2)) <= 0.2:
+                    # if distance travelled is greater than 0.5m then stop,otherwise move forward
+                    # the problems is now this cannot work        
+                        self.posx0 = self.tb3_odom.posx
+                        self.posy0 = self.tb3_odom.posy
+                        self.vel_controller.set_move_cmd(-0.2, 0)
+                    #self.vel_controller.publish()  
+                    else:
+                        self.vel_controller.set_move_cmd(0.2, 0) 
             self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))
             # populate the feedback message and publish it:
             self.feedback.current_distance_travelled = self.distance
             self.actionserver.publish_feedback(self.feedback)
-
+        while min(self.tb3_lidar.left_arc) <= 0.5:
+            print ("left is too close")
+            self.vel_controller.set_move_cmd(-0.2, 0)
+        while min(self.tb3_lidar.right_arc) <= 0.5:
+            print ("rigt is too close")
+            self.vel_controller.set_move_cmd(-0.2, 0)
         
-
         if success:
             rospy.loginfo("approach completed sucessfully.")
             self.result.total_distance_travelled = self.distance
@@ -187,17 +203,17 @@ class SearchActionServer(object):
             
     #Adjust direction to avoid being hit 
             
-    """
-    def turnright(self):       
-        print ( "right")    
+
+    def out(self):       
+        print ( "out")    
         #If condition for Determine which direction to turn     
         if abs(self.theta_z0 - self.theta_z) <= pi/2  :
-            self.vel_controller.set_move_cmd(0, 2.0)
+            self.vel_controller.set_move_cmd(0, 0.5)
             self.vel_controller.publish()  
         else:
-            self.vel_controller.set_move_cmd(0, 0)
+            self.vel_controller.set_move_cmd(0.2, 0)
             self.vel_controller.publish() 
-    """       
+       
             
 if __name__ == '__main__':
     rospy.init_node("search_action_server")
