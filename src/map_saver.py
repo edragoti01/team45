@@ -6,6 +6,10 @@ import roslaunch
 
 map_path = "/home/student/catkin_ws/src/team45/maps/"
 
+class map_saver(object):
+
+    def __init__
+
 rospy.init_node("map_saver", anonymous=True)
 
 launch = roslaunch.scriptapi.ROSLaunch()
