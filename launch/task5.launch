@@ -1,5 +1,14 @@
 <launch>
+    <arg name="target_colour" default="blue" />
+    
     <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch" />
-    <node pkg="team45" type="task5client.py" name="search_client" output="screen" />
+    
+    <node pkg="team45" type="task5client.py" name="search_action_client" output="screen" />
+    
     <node pkg="team45" type="task5server.py" name="search_action_server" output="screen" />
+    
+    <node pkg="team45" type="map_saver.py" name="map_saver" output="screen" />
+    
+    <node pkg="team45" type="beacon_finder.py" name="beacon_finder" output="screen"
+        args="-target_colour $(arg target_colour)" />
 </launch>

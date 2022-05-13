@@ -1,0 +1,6 @@
+<launch>
+    <arg name="target_colour" default="blue" />
+
+    <node pkg="team45" type="beacon_finder.py" name="beacon_finder" output="screen"
+        args="-target_colour $(arg target_colour)" />
+</launch>

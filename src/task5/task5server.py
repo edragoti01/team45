@@ -180,24 +180,21 @@ class SearchActionServer(object):
             self.vel_controller.publish() 
             
             self.vel_controller.stop()
-           
-
-                
 
             
     #Adjust direction to avoid being hit 
             
-    """
-    def turnright(self):       
-        print ( "right")    
-        #If condition for Determine which direction to turn     
-        if abs(self.theta_z0 - self.theta_z) <= pi/2  :
-            self.vel_controller.set_move_cmd(0, 2.0)
-            self.vel_controller.publish()  
-        else:
-            self.vel_controller.set_move_cmd(0, 0)
-            self.vel_controller.publish() 
-    """       
+    #"""
+    #def turnright(self):       
+    #    print ( "right")    
+    #    #If condition for Determine which direction to turn     
+    #    if abs(self.theta_z0 - self.theta_z) <= pi/2  :
+    #        self.vel_controller.set_move_cmd(0, 2.0)
+    #        self.vel_controller.publish()  
+    #    else:
+    #        self.vel_controller.set_move_cmd(0, 0)
+    #        self.vel_controller.publish() 
+    #"""       
             
 if __name__ == '__main__':
     rospy.init_node("search_action_server")

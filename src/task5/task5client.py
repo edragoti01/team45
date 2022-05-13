@@ -3,6 +3,10 @@
 import rospy
 import actionlib
 
+import roslaunch
+
+map_path = "team45/maps"
+
 
 from com2009_msgs.msg import SearchAction, SearchGoal, SearchFeedback
 
@@ -23,7 +27,6 @@ class action_client(object):
             print(f"FEEDBACK: Currently travelled {self.distance:.3f} m")
 
     def __init__(self):
-        node_name = "search_client"
         self.action_complete = False
         rospy.init_node("search_action_client")
         self.rate = rospy.Rate(1)
@@ -49,7 +52,19 @@ class action_client(object):
             self.client.cancel_goal()
             rospy.logwarn("Goal Cancelled")
 
+    def save_map(self):
+        map_path = "team45/maps"
 
+        rospy.init_node("map_saver", anonymous=True)
+
+        launch = roslaunch.scriptapi.ROSLaunch()
+        launch.start
+
+        print(f"Saving map at time: {rospy.get_time()}...")
+
+        node = roslaunch.core.Node(package="map_server", node_type="map_saver", args=f"-f {map_path}")
+
+        process = launch.launch(node)
     
 
 
