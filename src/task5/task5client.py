@@ -23,7 +23,7 @@ class action_client(object):
             print(f"FEEDBACK: Currently travelled {self.distance:.3f} m")
 
     def __init__(self):
-        node_name = "searc client"
+        node_name = "search_client"
         self.action_complete = False
         rospy.init_node("search_action_client")
         self.rate = rospy.Rate(1)
