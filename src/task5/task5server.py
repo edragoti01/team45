@@ -189,19 +189,6 @@ class SearchActionServer(object):
             
     #Adjust direction to avoid being hit 
             
-<<<<<<< HEAD
-    #"""
-    #def turnright(self):       
-    #    print ( "right")    
-    #    #If condition for Determine which direction to turn     
-    #    if abs(self.theta_z0 - self.theta_z) <= pi/2  :
-    #        self.vel_controller.set_move_cmd(0, 2.0)
-    #        self.vel_controller.publish()  
-    #    else:
-    #        self.vel_controller.set_move_cmd(0, 0)
-    #        self.vel_controller.publish() 
-    #"""       
-=======
 
     def out(self):       
         print ( "out")    
@@ -213,7 +200,6 @@ class SearchActionServer(object):
             self.vel_controller.set_move_cmd(0.2, 0)
             self.vel_controller.publish() 
        
->>>>>>> 4504f3fd7af6d49d999e3d3358e1753f6b88d96f
             
 if __name__ == '__main__':
     rospy.init_node("search_action_server")

@@ -3,14 +3,16 @@
 import rospy
 import roslaunch
 
-map_path = "team45/maps/task5_map"
+
+map_path = "/home/student/catkin_ws/src/team45/maps/"
 
 rospy.init_node("map_saver", anonymous=True)
 
 launch = roslaunch.scriptapi.ROSLaunch()
-launch.start
+launch.start()
 
 launch_status = True
+print(f"Launch status: {launch_status}")
 
 wait = 0
 
