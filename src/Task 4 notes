@@ -40,3 +40,37 @@ Explore until target colour spotted?
 
 1. Get start colour working
 2. Get the robot to explore and never return to the start
+
+
+
+MASK COLOUR VALUES
+
+RED
+
+Lower = (0,180,100)
+Upper = (10,255,255)
+
+YELLOW
+
+Lower = (25,130,100)
+Upper = (35,255,255)
+
+GREEN
+
+Lower = (55,120,100)
+Upper = (65,255,255)
+
+TURQUOISE
+
+Lower = (85,125,100)
+Upper = (95,255,255)
+
+BLUE
+
+Lower = (115,215,100)
+Upper = (125,255,255)
+
+PINK
+
+Lower = (145,165,100)
+Upper = (155,255,255)
