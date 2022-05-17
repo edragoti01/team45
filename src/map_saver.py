@@ -6,7 +6,7 @@ import roslaunch
 
 launch = roslaunch.scriptapi.ROSLaunch()
 
-map_path = "/home/student/catkin_ws/src/team45/maps/task5"
+map_path = "/home/student/catkin_ws/src/team45/maps/task5_map"
 
 class map_saver(object):
 
