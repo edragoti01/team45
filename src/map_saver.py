@@ -4,29 +4,48 @@ import rospy
 import roslaunch
 
 
-map_path = "/home/student/catkin_ws/src/team45/maps/"
+launch = roslaunch.scriptapi.ROSLaunch()
+
+map_path = "/home/student/catkin_ws/src/team45/maps/task5"
 
 class map_saver(object):
 
-    def __init__
+    def __init__(self):
+        node_name = "map_saver"
+        rospy.init_node(node_name, anonymous=True)
+        
+        launch.start()
 
-rospy.init_node("map_saver", anonymous=True)
+        self.ctrl_c = False
+        rospy.on_shutdown(self.shutdown_ops)
 
-launch = roslaunch.scriptapi.ROSLaunch()
-launch.start()
+        self.rate = rospy.Rate(5) # hz
 
-launch_status = True
-print(f"Launch status: {launch_status}")
+        print("The map saver node is active....")
+    
+    def shutdown_ops(self):
+        self.ctrl_c = True
+        print(f"The map saver node is shutting down...")
 
-wait = 0
+    def main(self):
 
-while launch_status:
-    if (wait%10) == 0:
+        while not self.ctrl_c:
+            rospy.sleep(5) # seconds
 
-        print(f"Saving map at time: {rospy.get_time()}...")
+            print(f"Saving map at time: {rospy.get_time()}...")
 
-        node = roslaunch.core.Node(package="map_server", node_type="map_saver", args=f"-f {map_path}")
+            node = roslaunch.core.Node(package="map_server", 
+                node_type="map_saver", args=f"-f {map_path}")
 
-        process = launch.launch(node)
+            launch.launch(node)
 
-    wait+=1
+
+
+if __name__ == '__main__':
+    search_instance = map_saver()
+    try:
+        search_instance.main()
+    except rospy.ROSInterruptException:
+        pass
+
+

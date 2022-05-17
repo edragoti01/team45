@@ -24,10 +24,10 @@ class beacon_finder(object):
         node_name = "beacon_finder"
         rospy.init_node(node_name)
 
-        self.target_colour = sys.argv
-        print(f"{self.target_colour}")
+        #Actual robot topic_name = "/camera/color/image_raw"
 
-        self.camera_sub = rospy.Subscriber("/camera/rgb/image_raw",
+        topic_name = "/camera/rgb/image_raw"
+        self.camera_sub = rospy.Subscriber(topic_name,
             Image, self.camera_callback)
         self.cvbridge_interface = CvBridge()
 
@@ -39,7 +39,6 @@ class beacon_finder(object):
         cli.add_argument("-target_colour", metavar="COL", type=str, default="blue")
 
         self.args = cli.parse_args(rospy.myargv()[1:])
-        print(f"{self.args}")
 
         self.rate = rospy.Rate(5) # hz
 
@@ -51,6 +50,7 @@ class beacon_finder(object):
     def shutdown_ops(self):
         cv2.destroyAllWindows()
         self.ctrl_c = True
+        print(f"The find beacon node is shutting down...")
 
     def save_image(self, img):
         
