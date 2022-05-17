@@ -1,0 +1,42 @@
+Task 4 notes
+
+###Use ros actions###
+
+Detecting start colour:
+
+Array of potential colours and mask values
+
+Turn around
+
+Borrow code from colour_search.py
+
+for i in ....
+    if camera input == mask[i]
+        target colour = .....
+
+
+Exploring? Or predetermined route?
+
+While colour not detected:
+
+    Follow_route() -- returns True if colour found?
+
+Follow route function -->
+        Colour detected function -->
+                Beaconing function 
+
+
+If colour detected
+
+Head to three predetermined locations? Not very adaptable
+
+Explore? Time wasting
+
+Odometry - never go back to start
+Record start position and prevent it from returning to it
+Try to go in circle? Follow outside wall?
+Explore until target colour spotted?
+
+
+1. Get start colour working
+2. Get the robot to explore and never return to the start
