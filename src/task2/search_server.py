@@ -32,8 +32,32 @@ class SearchActionServer(object):
         self.tb3_odom = Tb3Odometry()
         self.tb3_lidar = Tb3LaserScan()
 
+        self.theta_z = 0.0
+        self.theta_z0 = 0.0
+
         self.turned = False
-    
+    def callback_function(self, odom_data):
+        # obtain the orientation and position co-ords:
+        or_x = odom_data.pose.pose.orientation.x
+        or_y = odom_data.pose.pose.orientation.y
+        or_z = odom_data.pose.pose.orientation.z
+        or_w = odom_data.pose.pose.orientation.w
+        pos_x = odom_data.pose.pose.position.x
+        pos_y = odom_data.pose.pose.position.y
+
+        # convert orientation co-ords to roll, pitch & yaw (theta_x, theta_y, theta_z):
+        (roll, pitch, yaw) = euler_from_quaternion([or_x, or_y, or_z, or_w], 'sxyz')
+        
+        self.x = pos_x
+        self.y = pos_y
+        self.theta_z = yaw 
+
+        if self.startup: 
+            self.startup = False
+            self.x0 = self.x
+            self.y0 = self.y
+            self.theta_z0 = self.theta_z
+
     def scan_callback(self, scan_data):
         self.left_arc = scan_data.ranges[0:5]
         self.right_arc = scan_data.ranges[-5:]
@@ -95,43 +119,43 @@ class SearchActionServer(object):
                 success = False
                 # exit the loop:
                 break
-            if self.tb3_lidar.min_distance <= 0.8:
+            
+            while self.tb3_lidar.min_distance <= 0.8:
                 print('turning')
                 self.turn()
                 self.vel_controller.publish() 
                 self.turned = True
                 #self.vel_controller.publish() 
 
-            if self.turned:
-                print('here')
-                self.turned = False
-                """
-                if sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2)) >= 0.5:
-                    # if distance travelled is greater than 0.5m then stop,otherwise move forward
-                    # the problems is now this cannot work        
-                    self.posx0 = self.tb3_odom.posx
-                    self.posy0 = self.tb3_odom.posy
-                    self.vel_controller.stop()
-                    #self.vel_controller.publish()  
-                else:
-                   self.vel_controller.set_move_cmd(0.2, 0) 
-                """
-                self.vel_controller.set_move_cmd(0.2, 0) 
-                #self.vel_controller.publish() 
+                if self.turned:
+                    print('here')
+                    self.turned = False
+                    if abs(self.theta_z0 - self.theta_z) <= pi/2  :
+                        self.vel_controller.set_move_cmd(0, 1.0)
+                        self.vel_controller.publish()  
+                    else:
+                        self.vel_controller.set_move_cmd(0.2, 0)
+                        self.vel_controller.publish() 
+        
+                    self.vel_controller.set_move_cmd(0.2, 0) 
+                    self.vel_controller.publish() 
             self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))
             # populate the feedback message and publish it:
             self.feedback.current_distance_travelled = self.distance
             self.actionserver.publish_feedback(self.feedback)
 
-        while self.tb3_lidar.min_distance < goal.approach_distance:
+        while self.tb3_lidar.min_distance < goal.approach_distance and self.tb3_lidar.min_distance >= 0.3:
             print(f'Minimum distance = {self.tb3_lidar.min_distance}')
-            if self.tb3_lidar.min_distance < 0.2 :
-                self.vel_controller.stop()
-            else :
-                self.turn()
-                self.vel_controller.publish() 
-                self.turned = True
-            #pass
+            self.turn()
+            self.vel_controller.publish() 
+            self.turned = True
+                #self.vel_controller.publish() 
+
+            if self.turned:
+                print('here')
+                self.turned = False
+                self.vel_controller.set_move_cmd(-0.1, 0) 
+                self.vel_controller.publish()
 
         if success:
             rospy.loginfo("approach completed sucessfully.")
@@ -161,14 +185,14 @@ class SearchActionServer(object):
         #If condition for Determine which direction to turn     
         if left_degree_distance < right_degree_distance :
             print('j')
-            self.vel_controller.set_move_cmd(0, -3.0)
+            self.vel_controller.set_move_cmd(0, -2.0)
             self.vel_controller.publish() 
         elif right_degree_distance == left_degree_distance :
             print("i")
-            self.vel_controller.set_move_cmd(0, 3.0)
+            self.vel_controller.set_move_cmd(0, 2.0)
             self.vel_controller.publish() 
         else:
-            self.vel_controller.set_move_cmd(0, 0)
+            self.vel_controller.set_move_cmd(0, -2.0)
             self.vel_controller.publish() 
             print('stop')
 
