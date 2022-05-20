@@ -16,14 +16,11 @@ class action_client(object):
 
     def feedback_callback(self, feedback_data: SearchFeedback):
         self.distance = feedback_data.current_distance_travelled
-        if self.i < 100:
-            self.i += 1
-        else:
-            self.i = 0
-            print(f"FEEDBACK: Currently travelled {self.distance:.3f} m")
+
+        print(f"FEEDBACK: Currently travelled {self.distance:.3f} m")
 
     def __init__(self):
-        node_name = "searc client"
+        node_name = "maze navigation client"
         self.action_complete = False
         rospy.init_node("search_action_client")
         self.rate = rospy.Rate(1)
@@ -40,7 +37,6 @@ class action_client(object):
 
         rospy.on_shutdown(self.shutdown_ops) 
         self.distance = 0.0
-        self.i = 0
 
 
     def shutdown_ops(self):

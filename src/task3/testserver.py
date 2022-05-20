@@ -22,7 +22,7 @@ from math import sqrt, pow, pi
 class SearchActionServer(object):
     feedback = SearchFeedback() 
     result = SearchResult()
-
+   
     def callback_function(self, odom_data):
         # obtain the orientation and position co-ords:
         or_x = odom_data.pose.pose.orientation.x
@@ -62,9 +62,10 @@ class SearchActionServer(object):
         self.x0 = 0.0
         self.y0 = 0.0
         self.theta_z0 = 0.0
-    
-    def scan_callback(self, scan_data):
         
+    def scan_callback(self, scan_data):
+        self.fleft_arc=0
+        self.fright_arc=0
         self.scan_ranges=np.array(scan_data.ranges)
         self.right_arc= min(min(scan_data.ranges[0:20],5))
         self.left_arc= min(min(scan_data.ranges[349:359],5))
@@ -121,6 +122,7 @@ class SearchActionServer(object):
                 success = False
                 # exit the loop:
                 break
+            self.vel_controller.set_move_cmd(0.15,0)
             while self.tb3_lidar.min_distance <= 0.5:
                 
                 if min(self.tb3_lidar.right_arc) > min(self.tb3_lidar.left_arc) and (min(self.tb3_lidar.right_arc) > min(self.tb3_lidar.fleft_arc)) and (min(self.tb3_lidar.right_arc) > min(self.tb3_lidar.fright_arc)):

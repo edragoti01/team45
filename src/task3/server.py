@@ -134,29 +134,20 @@ class SearchActionServer(object):
                 if min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc):
                     print(min(self.tb3_lidar.left_arc))
                     print(min(self.tb3_lidar.right_arc))
-                    print('turning')
-                    self.vel_controller.set_move_cmd(0, 2.0)
+                    print('turning left')
+                    self.vel_controller.set_move_cmd(0, 2.125)
                     self.vel_controller.publish() 
                     self.turned = True
-                #self.vel_controller.publish() 
                 if min(self.tb3_lidar.left_arc) < min(self.tb3_lidar.right_arc):
-                    print('turning2')
-                    self.vel_controller.set_move_cmd(0, -2.0)
+                    print('turning right')
+                    self.vel_controller.set_move_cmd(0, -2.125)
                     self.vel_controller.publish() 
                     self.turned = True
-                #self.vel_controller.publish() 
+                    self.turned = True 
             if self.turned:
-                print('here')
+                print('moving forward until finding a wall')
                 self.turned = False
-                
-                
-                
                 self.vel_controller.set_move_cmd(0.2, 0)
-                if run_time >= (1.8):                           
-                    self.turnleft()
-                    self.vel_controller.publish()  
-                else:
-                    self.vel_controller.set_move_cmd(0.2, 0)
             self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))
             # populate the feedback message and publish it:
             self.feedback.current_distance_travelled = self.distance

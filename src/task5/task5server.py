@@ -102,7 +102,7 @@ class SearchActionServer(object):
 
         print("The robot will start to move now...")
         # set the robot velocity:
-        self.vel_controller.set_move_cmd(0.26, 0.0)
+        self.vel_controller.set_move_cmd(0.12, 0.0)
         reference_time = 0
         current_time = rospy.get_rostime().secs
         if reference_time == 0:
@@ -160,7 +160,7 @@ class SearchActionServer(object):
                     self.turned = True
                 if self.turned:
                     print('here')
-                    self.vel_controller.set_move_cmd(0.2, 0)
+                    self.vel_controller.set_move_cmd(0.12, 0)
                     if sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2)) <= 0.2:
                     # if distance travelled is greater than 0.5m then stop,otherwise move forward
                     # the problems is now this cannot work        
@@ -169,17 +169,11 @@ class SearchActionServer(object):
                         self.vel_controller.set_move_cmd(-0.2, 0)
                     #self.vel_controller.publish()  
                     else:
-                        self.vel_controller.set_move_cmd(0.2, 0) 
+                        self.vel_controller.set_move_cmd(0.12, 0) 
             self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))
             # populate the feedback message and publish it:
             self.feedback.current_distance_travelled = self.distance
             self.actionserver.publish_feedback(self.feedback)
-        while min(self.tb3_lidar.left_arc) <= 0.5:
-            print ("left is too close")
-            self.vel_controller.set_move_cmd(-0.2, 0)
-        while min(self.tb3_lidar.right_arc) <= 0.5:
-            print ("rigt is too close")
-            self.vel_controller.set_move_cmd(-0.2, 0)
         
         if success:
             rospy.loginfo("approach completed sucessfully.")
