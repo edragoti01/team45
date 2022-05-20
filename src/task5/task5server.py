@@ -139,18 +139,18 @@ class SearchActionServer(object):
                 success = False
                 # exit the loop:
                 break
-            while self.tb3_lidar.min_distance <= 0.5:
+            while self.tb3_lidar.min_distance <= 0.6:
                 if min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc) and min(self.tb3_lidar.left_arc) - min(self.tb3_lidar.right_arc)>0.01:
                    
                     print('turning')
-                    self.vel_controller.set_move_cmd(0, 0.2)
+                    self.vel_controller.set_move_cmd(0, 0.3)
                     #self.vel_controller.publish() 
                     self.turned = True
                     self.vel_controller.publish() 
                 elif min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc) and min(self.tb3_lidar.left_arc) - min(self.tb3_lidar.right_arc)<=0.01:
                     while min(self.tb3_lidar.left_arc) - min(self.tb3_lidar.right_arc)<=0.01:
                         print('turning left until finding a gap')
-                        self.vel_controller.set_move_cmd(0, 0.2)
+                        self.vel_controller.set_move_cmd(0, 0.3)
                         self.vel_controller.publish() 
                         if min(self.tb3_lidar.left_arc) - min(self.tb3_lidar.right_arc)>=0.015:
                             break
