@@ -54,6 +54,20 @@ class action_client(object):
         self.ctrl_c = True
         print(f"The client node is shutting down...")
 
+    def save_map(self):
+        map_path = "team45/maps"
+
+        rospy.init_node("map_saver", anonymous=True)
+
+        launch = roslaunch.scriptapi.ROSLaunch()
+        launch.start
+
+        print(f"Saving map at time: {rospy.get_time()}...")
+
+        node = roslaunch.core.Node(package="map_server", node_type="map_saver", args=f"-f {map_path}")
+
+        process = launch.launch(node)
+
 
 
     def print_stuff(self, a_message):
