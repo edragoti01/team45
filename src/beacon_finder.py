@@ -45,6 +45,11 @@ class beacon_finder(object):
         self.m00 = 0
         self.m00_min = 100000
 
+        self.is_red = False
+        self.is_yellow = False
+        self.is_green = False
+        self.is_blue = False
+
         print("The find beacon node is active....")
 
     def shutdown_ops(self):
@@ -63,6 +68,13 @@ class beacon_finder(object):
         global beacon_found
 
         #Thresholds for [red, yellow, green, blue]
+
+        #There is blue in every image, so for blue, mask out all colours and test
+        #for a blank image
+
+        #lower_bound = [(0,115,100), (17,116,100), (77,113,100), (96,150,100)]
+
+        #upper_bound = [(7,240,255), (27,245,255), (87,255,255), (104,255,255)]
 
         lower_bound = [(0,185,100), (25,100,100), (55,150,100), (115,200,100)]
 
@@ -87,6 +99,7 @@ class beacon_finder(object):
 
         if self.target_colour == "red":
             mask = cv2.inRange(hsv_img, lower_bound[0], upper_bound[0])
+
         elif self.target_colour == "yellow":
             mask = cv2.inRange(hsv_img, lower_bound[1], upper_bound[1])
 
@@ -94,7 +107,13 @@ class beacon_finder(object):
             mask = cv2.inRange(hsv_img, lower_bound[2], upper_bound[2])
 
         elif self.target_colour == "blue":
-            mask = cv2.inRange(hsv_img, lower_bound[3], upper_bound[3])
+            red_mask = cv2.inRange(hsv_img, lower_bound[0], upper_bound[0])
+            yellow_mask = cv2.inRange(hsv_img, lower_bound[1], upper_bound[1])
+            green_mask = cv2.inRange(hsv_img, lower_bound[2], upper_bound[2])
+            blue_mask = cv2.inRange(hsv_img, lower_bound[3], upper_bound[3])
+
+            if self.is_img_blue(crop_img, red_mask, yellow_mask, green_mask):
+                mask = blue_mask
 
         m = cv2.moments(mask)
 
@@ -110,6 +129,59 @@ class beacon_finder(object):
             cv2.waitKey(1)
 
             beacon_found = True
+
+    #There is blue in every image, so for blue, mask out all colours and test
+    #for a blank image
+    def is_img_blue(self, img, red_mask, yellow_mask, green_mask):
+
+        m = cv2.moments(red_mask)
+        self.m00 = m["m00"]
+        self.cy = m["m10"] / (m["m00"] + 1e-5)
+
+        if self.m00 > self.m00_min:
+            cv2.circle(img, (int(self.cy), 200), 10, (0, 0, 255), 2)
+
+            self.is_red = True
+
+            cv2.imshow("red image", img)
+            cv2.waitKey(1)
+
+
+        m = cv2.moments(yellow_mask)
+        self.m00 = m["m00"]
+        self.cy = m["m10"] / (m["m00"] + 1e-5)
+
+        if self.m00 > self.m00_min:
+            cv2.circle(img, (int(self.cy), 200), 10, (0, 0, 255), 2)
+
+            self.is_yellow = True
+
+            cv2.imshow("yellow image", img)
+            cv2.waitKey(1)
+
+
+        m = cv2.moments(green_mask)
+        self.m00 = m["m00"]
+        self.cy = m["m10"] / (m["m00"] + 1e-5)
+
+        if self.m00 > self.m00_min:
+            cv2.circle(img, (int(self.cy), 200), 10, (0, 0, 255), 2)
+            
+            self.is_green = True
+
+            cv2.imshow("green image", img)
+            cv2.waitKey(1)
+
+
+        if self.is_red or self.is_yellow or self.is_green:
+
+            self.is_blue = False
+        
+        else:
+
+            self.is_blue = True
+
+        return self.is_blue
 
     
     def main(self):
