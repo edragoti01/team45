@@ -32,8 +32,32 @@ class SearchActionServer(object):
         self.tb3_odom = Tb3Odometry()
         self.tb3_lidar = Tb3LaserScan()
 
+        self.theta_z = 0.0
+        self.theta_z0 = 0.0
+
         self.turned = False
-    
+    def callback_function(self, odom_data):
+        # obtain the orientation and position co-ords:
+        or_x = odom_data.pose.pose.orientation.x
+        or_y = odom_data.pose.pose.orientation.y
+        or_z = odom_data.pose.pose.orientation.z
+        or_w = odom_data.pose.pose.orientation.w
+        pos_x = odom_data.pose.pose.position.x
+        pos_y = odom_data.pose.pose.position.y
+
+        # convert orientation co-ords to roll, pitch & yaw (theta_x, theta_y, theta_z):
+        (roll, pitch, yaw) = euler_from_quaternion([or_x, or_y, or_z, or_w], 'sxyz')
+        
+        self.x = pos_x
+        self.y = pos_y
+        self.theta_z = yaw 
+
+        if self.startup: 
+            self.startup = False
+            self.x0 = self.x
+            self.y0 = self.y
+            self.theta_z0 = self.theta_z
+
     def scan_callback(self, scan_data):
         self.left_arc = scan_data.ranges[0:5]
         self.right_arc = scan_data.ranges[-5:]
