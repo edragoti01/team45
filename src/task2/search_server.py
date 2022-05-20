@@ -35,7 +35,13 @@ class SearchActionServer(object):
         self.theta_z = 0.0
         self.theta_z0 = 0.0
 
+        self.ctrl_c = False
         self.turned = False
+
+    def shutdown_ops(self):
+        self.ctrl_c = True
+        print(f"The server node is shutting down...")
+        
     def callback_function(self, odom_data):
         # obtain the orientation and position co-ords:
         or_x = odom_data.pose.pose.orientation.x
