@@ -122,37 +122,45 @@ class SearchActionServer(object):
                 # exit the loop:
                 break
             while self.tb3_lidar.min_distance <= 0.5:
-                if min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc):
+                if min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc) and min(self.tb3_lidar.left_arc) - min(self.tb3_lidar.right_arc)>0.01:
+                    print(min(self.tb3_lidar.left_arc))
+                    print(min(self.tb3_lidar.right_arc))
                     print('turning')
                     self.vel_controller.set_move_cmd(0, 0.2)
                     #self.vel_controller.publish() 
                     self.turned = True
-                self.vel_controller.publish() 
-                if min(self.tb3_lidar.left_arc) < min(self.tb3_lidar.right_arc):
-                    print('turning2')
+                    self.vel_controller.publish() 
+                elif min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc) and min(self.tb3_lidar.left_arc) - min(self.tb3_lidar.right_arc)<=0.01:
+                    while min(self.tb3_lidar.left_arc) - min(self.tb3_lidar.right_arc)<=0.01:
+                        print('turning left until finding a gap')
+                        self.vel_controller.set_move_cmd(0, 0.2)
+                        self.vel_controller.publish() 
+                        if min(self.tb3_lidar.left_arc) - min(self.tb3_lidar.right_arc)>=0.015:
+                            break
+
+                    #self.vel_controller.publish() 
+                    self.turned = True
+                elif min(self.tb3_lidar.right_arc) >= min(self.tb3_lidar.left_arc) and min(self.tb3_lidar.right_arc) - min(self.tb3_lidar.left_arc)>0.01:
+                    print(min(self.tb3_lidar.left_arc))
+                    print(min(self.tb3_lidar.right_arc))
+                    print('turning right')
                     self.vel_controller.set_move_cmd(0, -0.2)
                     self.vel_controller.publish() 
                     self.turned = True
-                    self.vel_controller.publish()
-                    print(self.stuck)
-                self.vel_controller.publish()
-                if self.stuck >= 10: 
-                    #self.stuck <= 8 and self.stuck >= 5  
-                    # do not delete this, this is for robot stuck in the corner backfoward 
-                    self.vel_controller.set_move_cmd(-0.2, 0)
-                    self.out()
-                    self.outed = True
-                    self.stuck = 0
-                    if self.out:
-                        print('out already')
-                        self.turned = False
-                        self.vel_controller.set_move_cmd(0.1, 0)  
+                elif min(self.tb3_lidar.right_arc) >= min(self.tb3_lidar.left_arc) and min(self.tb3_lidar.right_arc) - min(self.tb3_lidar.left_arc)>0.01:
+                    while min(self.tb3_lidar.right_arc) - min(self.tb3_lidar.left_arc)<=0.01:
+                        print('turning left until finding a gap')
+                        self.vel_controller.set_move_cmd(0,- 0.2)
+                        self.vel_controller.publish() 
+                        if min(self.tb3_lidar.right_arc) - min(self.tb3_lidar.left_arc)>=0.015:
+                            break
+                        
+                    
+                    #self.vel_controller.publish() 
+                    self.turned = True
                 if self.turned:
-                    self.turned = False
-                    self.stuck += 1
                     print('here')
-                    print(self.stuck)
-                    self.vel_controller.set_move_cmd(-0.2, 0)
+                    self.vel_controller.set_move_cmd(0.2, 0)
                     if sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2)) <= 0.2:
                     # if distance travelled is greater than 0.5m then stop,otherwise move forward
                     # the problems is now this cannot work        
