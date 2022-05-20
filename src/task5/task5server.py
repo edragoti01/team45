@@ -45,6 +45,10 @@ class SearchActionServer(object):
             self.y0 = self.y
             self.theta_z0 = self.theta_z
 
+    def shutdown_ops(self):
+        self.ctrl_c = True
+        print(f"The server node is shutting down...")
+
     def __init__(self):
         self.actionserver = actionlib.SimpleActionServer("/search_action_server", 
             SearchAction, self.action_server_launcher, auto_start=False)
@@ -53,6 +57,8 @@ class SearchActionServer(object):
         self.vel_controller = Tb3Move()
         self.tb3_odom = Tb3Odometry()
         self.tb3_lidar = Tb3LaserScan()
+
+        self.ctrl_c = False
 
         self.turned = False
         self.outed = False
@@ -63,12 +69,24 @@ class SearchActionServer(object):
         self.x0 = 0.0
         self.y0 = 0.0
         self.theta_z0 = 0.0
+
+        self.left_arc = 0
+        self.right_arc = 0
+        self.true_left_arc =0
+        self.true_right_arc =0
+        self.distance = 0
+        self.left_distance = 0
+        self.right_distance = 0
     
     def scan_callback(self, scan_data):
         self.left_arc = scan_data.ranges[0:20]
         self.right_arc = scan_data.ranges[-20:]
+        self.true_left_arc =scan_data.range[80:100]
+        self.true_right_arc =scan_data.range[260:280]
         self.front_arc = np.array(self.left_arc[::-1] + self.right_arc[::-1])
         self.min_distance = self.front_arc.min()
+        self.left_distance = self.true_left_arc.min()
+        self.right_distance = self.true_right_arc.min()
         
         # Create another numpy array which represents the angles 
         # (in degrees) associated with each of the data-points in 
@@ -109,7 +127,7 @@ class SearchActionServer(object):
             reference_time = current_time
         while current_time <= 190:
             run_time = current_time - reference_time
-            print(current_time)
+
             print(f'Minimum distance = {self.tb3_lidar.min_distance}')
             self.vel_controller.publish()
             # check if there has been a request to cancel the action mid-way through:
@@ -123,8 +141,7 @@ class SearchActionServer(object):
                 break
             while self.tb3_lidar.min_distance <= 0.5:
                 if min(self.tb3_lidar.left_arc) >= min(self.tb3_lidar.right_arc) and min(self.tb3_lidar.left_arc) - min(self.tb3_lidar.right_arc)>0.01:
-                    print(min(self.tb3_lidar.left_arc))
-                    print(min(self.tb3_lidar.right_arc))
+                   
                     print('turning')
                     self.vel_controller.set_move_cmd(0, 0.2)
                     #self.vel_controller.publish() 
@@ -141,8 +158,7 @@ class SearchActionServer(object):
                     #self.vel_controller.publish() 
                     self.turned = True
                 elif min(self.tb3_lidar.right_arc) >= min(self.tb3_lidar.left_arc) and min(self.tb3_lidar.right_arc) - min(self.tb3_lidar.left_arc)>0.01:
-                    print(min(self.tb3_lidar.left_arc))
-                    print(min(self.tb3_lidar.right_arc))
+                    
                     print('turning right')
                     self.vel_controller.set_move_cmd(0, -0.2)
                     self.vel_controller.publish() 

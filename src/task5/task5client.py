@@ -51,6 +51,9 @@ class action_client(object):
             rospy.logwarn("Received a shutdown request. Cancelling Goal...")
             self.client.cancel_goal()
             rospy.logwarn("Goal Cancelled")
+        self.ctrl_c = True
+        print(f"The client node is shutting down...")
+
 
     def save_map(self):
         map_path = "team45/maps"
