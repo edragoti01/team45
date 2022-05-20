@@ -21,6 +21,24 @@ class BeaconSearch(object):
 
 
     def __init__(self):
+        node_name = "beacon_search"
+        rospy.init_node(node_name)
+
+        topic_name = "/camera/rgb/image_raw"
+        self.camera_sub = rospy.Subscriber(topic_name,
+            Image, self.camera_callback)
+        self.cvbridge_interface = CvBridge()
+
+        self.ctrl_c = False
+        rospy.on_shutdown(self.shutdown_ops)
+
+        self.rate = rospy.Rate(5) # hz
+
+        self.m00 = 0
+        self.m00_min = 100000
+
+        print("The beacon colour search node is active....")
+
 
 
     def shutdownops(self):
