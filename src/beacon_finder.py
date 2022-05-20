@@ -24,9 +24,7 @@ class beacon_finder(object):
         node_name = "beacon_finder"
         rospy.init_node(node_name)
 
-        #Actual robot topic_name = "/camera/color/image_raw"
-
-        topic_name = "/camera/rgb/image_raw"
+        topic_name = "/camera/color/image_raw"
         self.camera_sub = rospy.Subscriber(topic_name,
             Image, self.camera_callback)
         self.cvbridge_interface = CvBridge()
@@ -72,13 +70,13 @@ class beacon_finder(object):
         #There is blue in every image, so for blue, mask out all colours and test
         #for a blank image
 
-        #lower_bound = [(0,115,100), (17,116,100), (77,113,100), (96,150,100)]
+        lower_bound = [(0,115,100), (17,116,100), (77,113,100), (96,150,100)]
 
-        #upper_bound = [(7,240,255), (27,245,255), (87,255,255), (104,255,255)]
+        upper_bound = [(7,240,255), (27,245,255), (87,255,255), (104,255,255)]
 
-        lower_bound = [(0,185,100), (25,100,100), (55,150,100), (115,200,100)]
+        #sim_lower_bound = [(0,185,100), (25,100,100), (55,150,100), (115,200,100)]
 
-        upper_bound = [(10,255,255), (35,255,255), (65,255,255), (130,255,255)]
+        #sim_upper_bound = [(10,255,255), (35,255,255), (65,255,255), (130,255,255)]
 
         try:
             cv_img = self.cvbridge_interface.imgmsg_to_cv2(img_data, desired_encoding="bgr8")
