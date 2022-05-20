@@ -74,3 +74,89 @@ PINK
 
 Lower = (145,165,100)
 Upper = (155,255,255)
+
+
+
+
+
+
+
+
+    def main(self):
+        self.send_cam_goal(images = 360, angle = 360)
+        prempt = False
+
+        while self.cam_client.get_state() < 2:
+            print(f"STATE: Current camera server state code is {self.client.get_state()}")
+
+            self.rate.sleep()
+        
+        self.cam_action_complete = True
+        print(f"RESULT: Action State = {self.client.get_state()}")
+        print(f"RESULT: {self.captured_images} image(s) saved.")
+
+if __name__ == '__main__':
+    client_instance = beacon_client()
+    try:
+        client_instance.main()
+    except rospy.ROSInterruptException:
+        pass
+
+
+
+    def shutdown_ops(self):
+        cv2.destroyAllWindows()
+        self.ctrl_c = True
+        print(f"The beacon colour search node is shutting down...")
+
+    def crop_image(self, img_data):
+        height, width, channels = img_data.shape
+
+        crop_width = width - 400
+        crop_height = 400
+        crop_y0 = int((width / 2) - (crop_width / 2))
+        crop_z0 = int((height / 2) - (crop_height / 2))
+        cropped_img = img_data[crop_z0:crop_z0+crop_height, crop_y0:crop_y0+crop_width]
+
+
+    def camera_callback(self, img_data):
+        try:
+            cv_img = self.cvbridge_interface.imgmsg_to_cv2(img_data, desired_encoding="bgr8")
+        except CvBridgeError as e:
+            print(e)
+
+        height, width, channels = cv_img.shape
+
+        crop_width = width - 400
+        crop_height = 400
+        crop_y0 = int((width / 2) - (crop_width / 2))
+        crop_z0 = int((height / 2) - (crop_height / 2))
+        cropped_img = cv_img[crop_z0:crop_z0+crop_height, crop_y0:crop_y0+crop_width]
+
+        if self.target_colour_found == False:
+
+
+
+
+    def find_target_colour(self, img_data):
+        
+
+        cropped_img = self.crop_image(img_data)
+
+        for i in range (self.colour_count): 
+
+            hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
+            lower_threshold = self.masks[i][1]
+            upper_threshold = self.masks[i][2]
+            img_mask = cv2.inRange(hsv_img, lower_threshold, upper_threshold)
+
+            cv2.imshow("masked image", img_mask)
+            cv2.waitKey(0)
+
+    #def beaconing(self):
+
+    def main(self):
+
+        while not self.ctrl_c:
+
+            self.find_target_colour(self.camera_sub)
