@@ -144,24 +144,28 @@ class SearchActionServer(object):
                         self.vel_controller.publish() 
         
                     self.vel_controller.set_move_cmd(0.2, 0) 
-                    self.vel_controller.publish() 
+                    self.vel_controller.publish()
+            while  self.tb3_lidar.min_distance < 0.8 and self.tb3_lidar.min_distance >= 0.5 :
+                print(f'Minimum distance = {self.tb3_lidar.min_distance}')
+                self.turn()
+                self.vel_controller.publish() 
+                self.turned = True
+                    #self.vel_controller.publish() 
+
+                if self.turned:
+                    print('here')
+                    self.turned = False
+                    self.vel_controller.set_move_cmd(-0.1, 0) 
+                    self.vel_controller.publish()
+ 
             self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))
             # populate the feedback message and publish it:
             self.feedback.current_distance_travelled = self.distance
             self.actionserver.publish_feedback(self.feedback)
 
-        while self.tb3_lidar.min_distance < goal.approach_distance and self.tb3_lidar.min_distance >= 0.3:
-            print(f'Minimum distance = {self.tb3_lidar.min_distance}')
-            self.turn()
-            self.vel_controller.publish() 
-            self.turned = True
-                #self.vel_controller.publish() 
-
-            if self.turned:
-                print('here')
-                self.turned = False
-                self.vel_controller.set_move_cmd(-0.1, 0) 
-                self.vel_controller.publish()
+        while self.tb3_lidar.min_distance <= goal.approach_distance and self.tb3_lidar.min_distance >= 0.3:
+            self.vel_controller.set_move_cmd(-0.1, 0) 
+            self.vel_controller.publish()
 
         if success:
             rospy.loginfo("approach completed sucessfully.")
