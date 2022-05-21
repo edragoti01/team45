@@ -1,9 +1,9 @@
 <launch>
 
-  <node pkg="team45" type="move_eight.py" name="move_eight" output="screen">
+  <node pkg="team45" type="beaconing.py" name="beacon_client_node" output="screen">
   </node>
 
-  <node pkg="team45" type="move_eight.py" name="move_eight" output="screen">
+  <node pkg="team45" type="beacon_search_server.py" name="beacon_search_node" output="screen">
   </node>
 
 </launch>
