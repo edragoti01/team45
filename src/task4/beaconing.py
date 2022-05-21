@@ -41,6 +41,7 @@ class Beaconing(object):
         self.initial_yaw = 1000.0
         self.current_yaw = 0.0
         self.reference_yaw = 0.0
+        self.image_captured = False
 
         self.capture_image = False
         self.image_count = 0
@@ -142,29 +143,32 @@ class Beaconing(object):
 
         while not self.ctrl_c:
 
-            self.current_yaw = round(self.tb3_odom.yaw, 0)
-            print(f"Current = {self.current_yaw}")
-            print(f"Image count = {self.image_count}")
+            while not self.image_captured:
 
-            if first_loop and self.current_yaw != 0.0:
-                self.initial_yaw = self.current_yaw
-                first_loop = False
+                self.current_yaw = round(self.tb3_odom.yaw, 0)
+                print(f"Current = {self.current_yaw}")
+                print(f"Image count = {self.image_count}")
 
-            if self.initial_yaw < 0:
-                self.reference_yaw = self.initial_yaw + 180
-            elif self.initial_yaw >= 0:
-                self.reference_yaw = self.initial_yaw - 180
+                if first_loop and self.current_yaw != 0.0:
+                    self.initial_yaw = self.current_yaw
+                    first_loop = False
 
-            if self.current_yaw != self.reference_yaw:
-                self.vel_controller.set_move_cmd(0.0, 0.2)
-            elif self.current_yaw == self.reference_yaw:
-                self.capture_image = True
+                if self.initial_yaw < 0:
+                    self.reference_yaw = self.initial_yaw + 180
+                elif self.initial_yaw >= 0:
+                    self.reference_yaw = self.initial_yaw - 180
 
-            
-            if self.current_yaw == self.initial_yaw and self.image_count >= 1:
-                self.vel_controller.set_move_cmd(0.0, 0.0)
+                if self.current_yaw != self.reference_yaw:
+                    self.vel_controller.set_move_cmd(0.0, 0.2)
+                elif self.current_yaw == self.reference_yaw:
+                    self.capture_image = True
 
-            self.vel_controller.publish()
+                
+                if self.current_yaw == self.initial_yaw and self.image_count >= 1:
+                    self.vel_controller.set_move_cmd(0.0, 0.0)
+                    self.image_captured = True
+
+                self.vel_controller.publish()
 
 
 
