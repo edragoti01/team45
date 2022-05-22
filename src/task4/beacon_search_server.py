@@ -8,7 +8,7 @@ import actionlib
 from com2009_msgs.msg import SearchFeedback, SearchResult, SearchAction, SearchGoal
 
 # Import the tb3 modules from tb3.py
-from tb3 import Tb3Move, Tb3Odometry, Tb3LaserScan
+from tb3 import Tb3Move, Tb3Odometry
 
 # Import some other useful Python Modules
 from math import sqrt, pow
@@ -29,9 +29,11 @@ class BeaconSearchServer(object):
             SearchAction, self.action_server_launcher, auto_start=False)
         self.actionserver.start()
 
+        self.sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
+
         self.vel_controller = Tb3Move()
         self.tb3_odom = Tb3Odometry()
-        self.tb3_lidar = Tb3LaserScan()
+
 
         self.posx = 0.0
         self.posy = 0.0
@@ -45,15 +47,31 @@ class BeaconSearchServer(object):
         self.x = 0.0
         self.y = 0.0
 
-        self.in_front = 0.0
-        self.left_arc = 0.0
-        self.right_arc = 0.0
-        self.front_arc = 0.0
+        self.front_arc = []
+        self.left_arc_array = []
+        self.right_arc_array = []
+        self.back_arc_array = []
+
         self.min_distance = 0.0
         self.max_distance = 0.0
 
+        self.left_min_distance = 0.0
+        self.left_max_distance = 0.0
+
+        self.right_min_distance = 0.0
+        self.right_max_distance = 0.0
+
+        self.back_min_distance = 0.0
+
+        self.max_object_angle = 0.0
+        self.min_object_angle = 0.0
+
+        self.closest_object_position = 0.0
+
+
         self.ctrl_c = False
         self.turned = False
+
         
     def callback_function(self, odom_data):
         # obtain the orientation and position co-ords:
@@ -78,18 +96,32 @@ class BeaconSearchServer(object):
             self.theta_z0 = self.theta_z
 
     def scan_callback(self, scan_data):
-        self.left_arc = scan_data.ranges[0:51]
-        self.right_arc = scan_data.ranges[-50:]
-        self.front_arc = np.array(self.left_arc[::-1] + self.right_arc[::-1])
-        self.in_front = np.abs[self.front_arc[round(len(self.front_arc/2), 0)]]
-        self.min_distance = np.argmin[self.front_arc]
-        self.max_distance = np.argmax[self.front_arc]
+        left_arc = scan_data.ranges[0:21]
+        right_arc = scan_data.ranges[-20:]
 
-        self.min_object_angle = self.arc_angles[np.argmin(scan_data)]
+        self.front_arc = np.array(left_arc[::-1] + right_arc[::-1])
+
+        self.left_arc_array = np.array(left_arc[::-1])
+        self.right_arc_array = np.array(right_arc[::-1])
         
-        # determine the angle at which the maximum distance value is located
-        # in front of the robot:
-        self.max_object_angle = self.arc_angles[np.argmax(self.front_arc)]
+        self.min_distance = self.front_arc.min()
+        self.max_distance = self.front_arc.max()
+
+        self.left_min_distance = self.left_arc_array.min()
+        self.left_max_distance = self.left_arc_array.max()
+
+        self.right_min_distance = self.right_arc_array.min()
+        self.right_max_distance = self.right_arc_array.max()
+
+        arc_angles = np.arange(-40, 41)
+        self.max_object_angle = arc_angles[np.argmax(self.front_arc)]
+        self.min_object_angle = arc_angles[np.argmin(scan_data)]
+
+        back_arc = scan_data.ranges[160:200]
+        self.back_arc_array = np.array(back_arc[::-1])
+        self.back_min_distance = self.back_arc_array.min()
+
+        self.closest_object_position = np.argmin(self.front_arc)
 
     
     def action_server_launcher(self, goal: SearchGoal):
@@ -118,25 +150,22 @@ class BeaconSearchServer(object):
         # set the robot velocity:
         self.vel_controller.set_move_cmd(goal.fwd_velocity, 0.0)
 
-        while self.tb3_lidar[0] >= goal.approach_distance:
+        #while the distance in front of the robot is larger or equal to the minimum approach distance
+        while self.min_distance >= goal.approach_distance:
             self.vel_controller.publish()
 
-            # check if there has been a request to cancel the action mid-way through:
-            if self.actionserver.is_preempt_requested():
-                rospy.loginfo("Cancelling the search.")
-                self.actionserver.set_preempted()
-                # stop the robot:
-                self.vel_controller.stop()
-                success = False
-                # exit the loop:
-                break
-
-        while self.tb3_lidar.front_arc < goal.approach_distance:
-
-            while self.tb3_lidar[0] != self.max_distance:
-
-                self.vel_controller.set_move_cmd(0.0, 0.5)
-                self.vel_controller.publish()
+            #if the max distance in the left arc is bigger than the max distance in the right arc
+            #if self.left_max_distance > self.right_max_distance:
+                #turn left
+            #    self.vel_controller.set_move_cmd(goal.fwd_velocity, 0.4)
+            #if the max distance in the right arc is bigger than the max distance in the left arc
+            #elif self.left_max_distance < self.right_max_distance:
+                #turn right
+            #    self.vel_controller.set_move_cmd(goal.fwd_velocity, -0.4)
+            #if the max distances in the left and right arcs are equal
+            #else:
+                #turn left
+            #    self.vel_controller.set_move_cmd(goal.fwd_velocity, 0.4)
 
             # check if there has been a request to cancel the action mid-way through:
             if self.actionserver.is_preempt_requested():
@@ -147,50 +176,80 @@ class BeaconSearchServer(object):
                 success = False
                 # exit the loop:
                 break
-        
-        while self.tb3_lidar.min_distance <= 0.8:
-            print('turning')
-            self.turn()
-            self.vel_controller.publish() 
-            self.turned = True
-            #self.vel_controller.publish() 
 
-            if self.turned:
-                print('here')
-                self.turned = False
-                while abs(self.theta_z0 - self.theta_z) <= pi/2  :
-                    self.vel_controller.set_move_cmd(0, 1.0)
-                    self.vel_controller.publish()  
-                self.vel_controller.set_move_cmd(0.2, 0)
-                self.vel_controller.publish() 
+        #while the distance in front of the robot is less than the minimum approach distance
+        while self.min_distance < goal.approach_distance:
+            self.vel_controller.publish()
 
-        while  self.tb3_lidar.min_distance < 0.8 and self.tb3_lidar.min_distance >= 0.5 :
-            print(f'Minimum distance = {self.tb3_lidar.min_distance}')
-            self.turn()
-            self.vel_controller.publish() 
-            self.turned = True
-                #self.vel_controller.publish() 
+            #if the min distance in the right arc is smaller than the min distance in the left arc
+            if self.left_min_distance > self.right_min_distance:
+                #turn left
+                self.vel_controller.set_move_cmd(0.0, 0.2)
+            #if the min distance in the left arc is smaller than the min distance in the right arc
+            elif self.left_min_distance < self.right_min_distance:
+                #turn right
+                self.vel_controller.set_move_cmd(0.0, -0.2)
+            #if the min distances in the left and right arcs are equal
+            else:
+                #turn left
+                self.vel_controller.set_move_cmd(0.0, 0.2)
 
-            if self.turned:
-                print('here')
-                self.turned = False
-                self.vel_controller.set_move_cmd(-0.1, 0) 
-                self.vel_controller.publish()
+
+            #if the robot is too close to an object at the back
+            while self.back_min_distance <= 0.1:
+                self.vel_controller.stop()
+
+                #if min distance in front of robot is greater than the min distance at the back
+                if self.min_distance > self.back_min_distance:
+                    #move forward slowly
+                    self.vel_controller.set_move_cmd(0.1, 0.0)
+                #if min distance in front is smaller than min distance at the back
+                elif self.min_distance < self.back_min_distance:
+                    #determine which arc (left or right) has the max distance and turn that way
+
+                    #if left max is bigger than right max
+                    if self.left_max_distance > self.right_max_distance:
+                        #turn left until the front min distance is bigger than the back min distance
+                        while self.min_distance < self.back_min_distance:
+                            self.vel_controller.set_move_cmd(0.0, 0.2)
+                    
+                    #if right max is bigger than left max               
+                    elif self.left_max_distance > self.right_max_distance:
+                        #turn right until the front min distance is bigger than the back min distance
+                        while self.min_distance < self.back_min_distance:
+                            self.vel_controller.set_move_cmd(0.0, -0.2)
+
+                    #if left and right max are equal
+                    else:
+                        #turn left until front min is bigger than back min
+                        while self.min_distance < self.back_min_distance:
+                            self.vel_controller.set_move_cmd(0.0, 0.2)
+
+
+
+
+            # check if there has been a request to cancel the action mid-way through:
+            if self.actionserver.is_preempt_requested():
+                rospy.loginfo("Cancelling the search.")
+                self.actionserver.set_preempted()
+                # stop the robot:
+                self.vel_controller.stop()
+                success = False
+                # exit the loop:
+                break
+
+
 
         self.distance = sqrt(pow(self.posx0 - self.tb3_odom.posx, 2) + pow(self.posy0 - self.tb3_odom.posy, 2))
         # populate the feedback message and publish it:
         self.feedback.current_distance_travelled = self.distance
         self.actionserver.publish_feedback(self.feedback)
 
-        while self.tb3_lidar.min_distance <= goal.approach_distance and self.tb3_lidar.min_distance >= 0.3:
-            self.vel_controller.set_move_cmd(-0.1, 0) 
-            self.vel_controller.publish()
-
         if success:
-            rospy.loginfo("approach completed sucessfully.")
+            rospy.loginfo("search completed sucessfully")
             self.result.total_distance_travelled = self.distance
-            self.result.closest_object_distance = self.tb3_lidar.min_distance
-            self.result.closest_object_angle = self.tb3_lidar.closest_object_position
+            self.result.closest_object_distance = self.min_distance
+            self.result.closest_object_angle = self.closest_object_position
 
             self.actionserver.set_succeeded(self.result)
             
@@ -199,32 +258,6 @@ class BeaconSearchServer(object):
             
             self.vel_controller.stop()
            
-
-                
-
-            
-    #Adjust direction to avoid being hit 
-    def turn(self): 
-        
-        left_degree_distance  = self.tb3_lidar.left_arc
-        right_degree_distance = self.tb3_lidar.right_arc
-        
-        #If condition for Determine which direction to turn     
-        if left_degree_distance < right_degree_distance :
-            print('j')
-            self.vel_controller.set_move_cmd(0, -2.0)
-            self.vel_controller.publish() 
-        elif right_degree_distance == left_degree_distance :
-            print("i")
-            self.vel_controller.set_move_cmd(0, 2.0)
-            self.vel_controller.publish() 
-        else:
-            self.vel_controller.set_move_cmd(0, -2.0)
-            self.vel_controller.publish() 
-            print('stop')
-
-
-
             
 if __name__ == '__main__':
     rospy.init_node("search_action_server")

@@ -175,10 +175,10 @@ class Beaconing(object):
         elif self.initial_yaw >= 0:
             self.reference_yaw = self.initial_yaw - 180
 
+
         if self.current_yaw != self.reference_yaw:
             self.vel_controller.set_move_cmd(0.0, 0.3)
         elif self.current_yaw == self.reference_yaw:
-            self.vel_controller.stop()
             self.capture_image = True
 
         if self.current_yaw == self.initial_yaw and self.image_count >= 1:
@@ -206,13 +206,13 @@ class Beaconing(object):
             self.rate.sleep()
         
         self.action_complete = True
-        print(f"RESULT: Action State = {self.client.get_state()}")
-        if prempt:
-            print("RESULT: Action preempted after travelling 2 meters")
-        else:
-            result = self.client.get_result()
-            print(f"RESULT: closest object {result.closest_object_distance:.3f} m away "
-                    f"at a location of {result.closest_object_angle:.3f} degrees")
+        #print(f"RESULT: Action State = {self.client.get_state()}")
+        #if prempt:
+        #    print("RESULT: Action preempted after travelling 2 meters")
+        #else:
+        #    result = self.client.get_result()
+        #    print(f"RESULT: closest object {result.closest_object_distance:.3f} m away "
+        #            f"at a location of {result.closest_object_angle:.3f} degrees")
 
 
     def beaconing(self):
