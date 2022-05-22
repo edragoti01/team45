@@ -61,17 +61,6 @@ class Beaconing(object):
         self.ctrl_c = False
         rospy.on_shutdown(self.shutdown_ops)
 
-        #self.distance = 0.0
-
-        #self.is_red = False
-        #self.is_yellow = False
-        #self.is_green = False
-        #self.is_turquoise = False
-        #self.is_blue = False
-        #self.is_purple = False
-
-        #OR
-
         self.colour_identified = False
         self.target_colour = ""
         self.target_colour_index = 0
@@ -200,7 +189,7 @@ class Beaconing(object):
 
     def search_for_beacon(self):
     
-        self.send_goal(velocity = 0.1, approach = 0.5)
+        self.send_goal(velocity = 0.2, approach = 0.8)
         prempt = False
         while self.client.get_state() < 2:
             self.rate.sleep()

@@ -68,6 +68,16 @@ class BeaconSearchServer(object):
 
         self.closest_object_position = 0.0
 
+        self.ex_left_array = []
+        self.ex_right_array = []
+
+        self.ex_left_min_distance = 0.0
+        self.ex_left_max_distance = 0.0
+
+        self.ex_right_min_distance = 0.0
+        self.ex_right_max_distance = 0.0
+
+
 
         self.ctrl_c = False
         self.turned = False
@@ -96,6 +106,8 @@ class BeaconSearchServer(object):
             self.theta_z0 = self.theta_z
 
     def scan_callback(self, scan_data):
+        #note: ex means extended
+
         left_arc = scan_data.ranges[0:21]
         right_arc = scan_data.ranges[-20:]
 
@@ -113,8 +125,8 @@ class BeaconSearchServer(object):
         self.right_min_distance = self.right_arc_array.min()
         self.right_max_distance = self.right_arc_array.max()
 
-        arc_angles = np.arange(-40, 41)
-        self.max_object_angle = arc_angles[np.argmax(self.front_arc)]
+        arc_angles = np.arange(-20, 21)
+        self.max_object_angle = arc_angles[np.argmax(scan_data)]
         self.min_object_angle = arc_angles[np.argmin(scan_data)]
 
         back_arc = scan_data.ranges[160:200]
@@ -122,6 +134,18 @@ class BeaconSearchServer(object):
         self.back_min_distance = self.back_arc_array.min()
 
         self.closest_object_position = np.argmin(self.front_arc)
+
+        ex_left_arc = scan_data.ranges[21:41]
+        ex_right_arc = scan_data.ranges[-40:-20]
+
+        self.ex_left_array = np.array(ex_left_arc[::-1])
+        self.ex_right_array = np.array(ex_right_arc[::-1])
+
+        self.ex_left_min_distance = self.ex_left_array.min()
+        self.ex_left_max_distance = self.ex_left_array.max()
+
+        self.ex_right_min_distance = self.ex_right_array.min()
+        self.ex_right_max_distance = self.ex_right_array.max()
 
     
     def action_server_launcher(self, goal: SearchGoal):
@@ -154,19 +178,6 @@ class BeaconSearchServer(object):
         while self.min_distance >= goal.approach_distance:
             self.vel_controller.publish()
 
-            #if the max distance in the left arc is bigger than the max distance in the right arc
-            #if self.left_max_distance > self.right_max_distance:
-                #turn left
-            #    self.vel_controller.set_move_cmd(goal.fwd_velocity, 0.4)
-            #if the max distance in the right arc is bigger than the max distance in the left arc
-            #elif self.left_max_distance < self.right_max_distance:
-                #turn right
-            #    self.vel_controller.set_move_cmd(goal.fwd_velocity, -0.4)
-            #if the max distances in the left and right arcs are equal
-            #else:
-                #turn left
-            #    self.vel_controller.set_move_cmd(goal.fwd_velocity, 0.4)
-
             # check if there has been a request to cancel the action mid-way through:
             if self.actionserver.is_preempt_requested():
                 rospy.loginfo("Cancelling the search.")
@@ -184,15 +195,21 @@ class BeaconSearchServer(object):
             #if the min distance in the right arc is smaller than the min distance in the left arc
             if self.left_min_distance > self.right_min_distance:
                 #turn left
-                self.vel_controller.set_move_cmd(0.0, 0.2)
+                    self.vel_controller.set_move_cmd(0.0, 0.8)
             #if the min distance in the left arc is smaller than the min distance in the right arc
             elif self.left_min_distance < self.right_min_distance:
                 #turn right
-                self.vel_controller.set_move_cmd(0.0, -0.2)
+                self.vel_controller.set_move_cmd(0.0, -0.8)
             #if the min distances in the left and right arcs are equal
             else:
-                #turn left
-                self.vel_controller.set_move_cmd(0.0, 0.2)
+                #if min distance of extended left arc is bigger than min of extended right arc
+                if self.ex_left_min_distance > self.ex_right_min_distance:
+                    #turn left
+                    self.vel_controller.set_move_cmd(0.0, 0.8)
+                #if the min distance in extended left arc is smaller than the min distance in extended right arc
+                elif self.ex_left_max_distance < self.ex_right_max_distance:
+                    #turn right
+                    self.vel_controller.set_move_cmd(0.0, -0.8)
 
 
             #if the robot is too close to an object at the back
