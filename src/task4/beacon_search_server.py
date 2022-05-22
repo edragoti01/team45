@@ -1,8 +1,11 @@
 #! /usr/bin/python3
 
 # Import the core Python modules for ROS and to implement ROS Actions:
+from multiprocessing.connection import wait
 import rospy
 import actionlib
+
+import time
 
 # Import all the necessary ROS message types:
 from com2009_msgs.msg import SearchFeedback, SearchResult, SearchAction, SearchGoal
@@ -66,7 +69,10 @@ class BeaconSearchServer(object):
         self.max_object_angle = 0.0
         self.min_object_angle = 0.0
 
-        self.closest_object_position = 0.0
+        self.closest_object_position = 0
+        self.furthest_object_position = 0
+
+        self.furthest_object_distance = 0.0
 
         self.ex_left_array = []
         self.ex_right_array = []
@@ -135,8 +141,10 @@ class BeaconSearchServer(object):
 
         self.closest_object_position = np.argmin(self.front_arc)
 
-        ex_left_arc = scan_data.ranges[21:41]
-        ex_right_arc = scan_data.ranges[-40:-20]
+        self.furthest_object_position = np.argmax(self.front_arc)
+
+        ex_left_arc = scan_data.ranges[21:81]
+        ex_right_arc = scan_data.ranges[-80:-20]
 
         self.ex_left_array = np.array(ex_left_arc[::-1])
         self.ex_right_array = np.array(ex_right_arc[::-1])
@@ -175,8 +183,19 @@ class BeaconSearchServer(object):
         self.vel_controller.set_move_cmd(goal.fwd_velocity, 0.0)
 
         #while the distance in front of the robot is larger or equal to the minimum approach distance
-        while self.min_distance >= goal.approach_distance:
+        while self.min_distance > goal.approach_distance:
             self.vel_controller.publish()
+
+            #if the difference between the max distances for the left and right arc is negligible: 
+            #if abs(self.left_max_distance - self.right_max_distance) < 0.1:
+                #if min distance of extended left arc is bigger than min of extended right arc
+                #if self.ex_left_min_distance > self.ex_right_min_distance:
+                    #turn left
+                #self.vel_controller.set_move_cmd(0.0, 0.8)
+                #if the min distance in extended left arc is smaller than the min distance in extended right arc
+                #elif self.ex_left_max_distance < self.ex_right_max_distance:
+                    #turn right
+                #    self.vel_controller.set_move_cmd(0.0, -0.8)
 
             # check if there has been a request to cancel the action mid-way through:
             if self.actionserver.is_preempt_requested():
@@ -188,28 +207,58 @@ class BeaconSearchServer(object):
                 # exit the loop:
                 break
 
+        #Counts used to make sure robot doesn't get stuck in corners
+        loop_count = 0
+
+        stuck_count = 0
+
         #while the distance in front of the robot is less than the minimum approach distance
-        while self.min_distance < goal.approach_distance:
+        while self.min_distance <= goal.approach_distance:
+            loop_count += 1
+
             self.vel_controller.publish()
 
-            #if the min distance in the right arc is smaller than the min distance in the left arc
-            if self.left_min_distance > self.right_min_distance:
-                #turn left
-                    self.vel_controller.set_move_cmd(0.0, 0.8)
-            #if the min distance in the left arc is smaller than the min distance in the right arc
-            elif self.left_min_distance < self.right_min_distance:
+            #if loop has run 50000 times (meaning robot is probably stuck)
+            if loop_count >= 50000:
+                stuck_count += 1
+
+                print("Give me a second, I'm stuck")
+
                 #turn right
-                self.vel_controller.set_move_cmd(0.0, -0.8)
-            #if the min distances in the left and right arcs are equal
-            else:
+                self.vel_controller.set_move_cmd(0.0, -0.9)
+
+                #wait for 1 second and try again
+                time.sleep(1)
+
+                if stuck_count > 10:
+                    print("Hang on I'm really stuck")
+
+                    #turn left and wait a second
+                    self.vel_controller.set_move_cmd(0.0, 0.9)
+
+                    time.sleep(1)
+
+
+            #if the max distance of the left and right arcs are equal 
+            if self.left_max_distance == self.right_max_distance:
                 #if min distance of extended left arc is bigger than min of extended right arc
                 if self.ex_left_min_distance > self.ex_right_min_distance:
                     #turn left
-                    self.vel_controller.set_move_cmd(0.0, 0.8)
+                    self.vel_controller.set_move_cmd(0.0, 0.9)
                 #if the min distance in extended left arc is smaller than the min distance in extended right arc
                 elif self.ex_left_max_distance < self.ex_right_max_distance:
                     #turn right
-                    self.vel_controller.set_move_cmd(0.0, -0.8)
+                    self.vel_controller.set_move_cmd(0.0, -0.9)
+
+            #if the min distance in the right arc is smaller than the min distance in the left arc
+            elif self.left_min_distance > self.right_min_distance:
+                #turn left
+                self.vel_controller.set_move_cmd(0.0, 0.9)
+            #if the min distance in the left arc is smaller than the min distance in the right arc
+            elif self.left_min_distance < self.right_min_distance:
+                #turn right
+                self.vel_controller.set_move_cmd(0.0, -0.9)
+
 
 
             #if the robot is too close to an object at the back
@@ -263,7 +312,6 @@ class BeaconSearchServer(object):
         self.actionserver.publish_feedback(self.feedback)
 
         if success:
-            rospy.loginfo("search completed sucessfully")
             self.result.total_distance_travelled = self.distance
             self.result.closest_object_distance = self.min_distance
             self.result.closest_object_angle = self.closest_object_position
