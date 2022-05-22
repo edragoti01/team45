@@ -230,8 +230,8 @@ class BeaconSearchServer(object):
                 #wait for 1 second and try again
                 time.sleep(1)
 
-                if stuck_count > 10:
-                    print("Hang on I'm really stuck")
+                if stuck_count > 4:
+                    print("Just a minute")
 
                     #turn left and wait a second
                     self.vel_controller.set_move_cmd(0.0, 0.9)

@@ -25,6 +25,10 @@ class Beaconing(object):
         node_name = "beaconing_node"
         rospy.init_node(node_name)
 
+        self.colour_identified = False
+        self.target_colour = ""
+        self.target_colour_index = 0
+
         topic_name = "/camera/rgb/image_raw"
         self.camera_sub = rospy.Subscriber(topic_name,
             Image, self.camera_callback)
@@ -61,10 +65,6 @@ class Beaconing(object):
         self.ctrl_c = False
         rospy.on_shutdown(self.shutdown_ops)
 
-        self.colour_identified = False
-        self.target_colour = ""
-        self.target_colour_index = 0
-
         self.masks = [
             ["red", (0,175,100), (5,255,255)],
             ["yellow", (25,150,100), (35,255,255)],
@@ -73,8 +73,6 @@ class Beaconing(object):
             ["blue", (115,200,100), (125,255,255)],
             ["purple", (145,160,100), (155,255,255)]
         ]
-
-        #self.colour_count = 6
 
         print("The beaconing node is active....")
 
@@ -112,18 +110,24 @@ class Beaconing(object):
             self.capture_image = False
             self.image_count += 1
 
-        if self.look_for_target:
+        if self.colour_identified:
+
+            search_hsv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2HSV)
+
 
             lower_bound = self.masks[self.target_colour_index][1]
             upper_bound = self.masks[self.target_colour_index][2]
 
-            mask = cv2.inRange(hsv_img, lower_bound, upper_bound)
+            mask = cv2.inRange(search_hsv_img, lower_bound, upper_bound)
 
             m = cv2.moments(mask)
             self.m00 = m["m00"]
-            self.cy = m["m10"] / (m["m00"] + 1e-5)
+            self.cy = m["m10"] / (m["m00"] + 1e-5) 
+            self.cz = m['m01']/(m['m00']+1e-5)
 
             if self.m00 > self.m00_min:
+
+                cv2.circle(search_hsv_img, (int(self.cy), int(self.cz)), 10, (0, 0, 255), 2)
 
                 self.target_in_view = True
 
@@ -188,6 +192,11 @@ class Beaconing(object):
 
 
     def search_for_beacon(self):
+
+        if self.first_loop:
+            print(f"SEARCH INITIATED: The target beacon colour is {self.target_colour}.")
+            self.first_loop = False
+
     
         self.send_goal(velocity = 0.2, approach = 0.8)
         prempt = False
@@ -195,6 +204,15 @@ class Beaconing(object):
             self.rate.sleep()
         
         self.action_complete = True
+
+        if self.m00 > self.m00_min:
+                # blob detected
+                if self.cy < 10 and self.cy > 0:
+                    print(f"TARGET DETECTED: Beaconing initiated.")
+                    self.target_in_view = True
+
+        #if self.target_in_view:
+        #    self.send_goal(velocity = 0.0, approach = 3.0)
         #print(f"RESULT: Action State = {self.client.get_state()}")
         #if prempt:
         #    print("RESULT: Action preempted after travelling 2 meters")
@@ -206,8 +224,10 @@ class Beaconing(object):
 
     def beaconing(self):
 
-        a = 1
     
+        self.vel_controller.set_move_cmd(0.0, 0.0)
+        self.vel_controller.publish()
+
     def main(self):
         while not self.ctrl_c:
 
@@ -221,11 +241,18 @@ class Beaconing(object):
                 self.target_colour = self.masks[self.target_colour_index][0]
 
             if self.image_captured and self.colour_identified:
-                print(f"SEARCH INITIATED: The target beacon colour is {self.target_colour}.")
+                self.first_loop = True
+
                 while not self.target_in_view:
                     self.search_for_beacon()
-                print("TARGET DETECTED: Beaconing initiated.")
+
                 self.beaconing()
+
+
+
+
+            #print(f"In view? {self.target_in_view}")
+            
 
 if __name__ == '__main__':
     beacon_instance = Beaconing()
